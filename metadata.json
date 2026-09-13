@@ -1,0 +1,6 @@
+{
+  "name": "owi",
+  "description": "Alat pemeriksa klaim politik Indonesia berbasis bukti dan analisis kredibel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
