@@ -1,4 +1,4 @@
-import { AnalyzeRequest, AnalyzeResponse, ExampleClaim } from '../types';
+import type { AnalyzeRequest, AnalyzeResponse, ExampleClaim } from '../types';
 
 /**
  * MOCK FLAG:
@@ -25,6 +25,21 @@ export const EXAMPLE_CLAIMS: ExampleClaim[] = [
     label: 'Putusan Mahkamah Konstitusi',
     category: 'Hukum / Tata Negara',
     text: 'Mahkamah Konstitusi mengabulkan sebagian uji materi Pasal 169 huruf q UU Pemilu, sehingga syarat usia capres-cawapres menjadi minimal 40 tahun atau pernah/sedang menduduki jabatan yang dipilih melalui pemilihan umum termasuk pilkada.',
+  },
+];
+
+/** Dev shortcuts (footer "Pengembang" panel), one per mock case, in MOCK_DATABASE order. */
+export const SCENARIOS = [
+  { label: 'Salah', text: EXAMPLE_CLAIMS[1].text },
+  { label: 'Benar', text: EXAMPLE_CLAIMS[2].text },
+  { label: 'Menyesatkan', text: EXAMPLE_CLAIMS[0].text },
+  {
+    label: 'Opini',
+    text: 'Kebijakan hilirisasi mineral tambang di Indonesia merupakan kegagalan strategis terbesar yang hanya menguntungkan oligarki dan merusak kedaulatan lingkungan masa depan.',
+  },
+  {
+    label: 'Tanpa bukti',
+    text: 'Beredar kabar bahwa ketua umum partai koalisi menggelar pertemuan rahasia dini hari di pulau terpencil Kepulauan Seribu untuk menetapkan jatah menteri 2029.',
   },
 ];
 
@@ -401,5 +416,28 @@ export async function analyzeClaim(request: AnalyzeRequest): Promise<AnalyzeResp
     throw new Error(`Gagal menganalisis klaim: ${response.status} ${response.statusText} ${errorDetail}`.trim());
   }
 
-  return response.json() as Promise<AnalyzeResponse>;
+  return parseAnalyzeResponse(await response.json());
+}
+
+const VERDICTS = ['TRUE', 'MISLEADING', 'FALSE', 'UNVERIFIABLE', 'OPINION'];
+
+/**
+ * Backend output is untrusted: a missing array or unknown verdict would crash
+ * the result view, so reject malformed payloads with a readable error instead.
+ */
+export function parseAnalyzeResponse(data: unknown): AnalyzeResponse {
+  const d = data as Partial<AnalyzeResponse> | null;
+  if (
+    !d ||
+    !VERDICTS.includes(d.verdict as string) ||
+    typeof d.confidence !== 'number' ||
+    typeof d.claim_extracted !== 'string' ||
+    !Array.isArray(d.entities) ||
+    !Array.isArray(d.explanation_tokens) ||
+    !Array.isArray(d.evidence) ||
+    typeof d.retrieval_empty !== 'boolean'
+  ) {
+    throw new Error('Respons server tidak sesuai kontrak API.');
+  }
+  return d as AnalyzeResponse;
 }
