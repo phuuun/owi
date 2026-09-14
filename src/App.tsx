@@ -8,6 +8,7 @@ import { EvidenceTimeline } from './components/EvidenceTimeline';
 import { FocusShift } from './components/FocusShift';
 import { HistorySidebar } from './components/HistorySidebar';
 import { Layout } from './components/Layout';
+import { ModelInsights } from './components/ModelInsights';
 import { ScanningPulse } from './components/ScanningPulse';
 import { SearchInterrogation } from './components/SearchInterrogation';
 import { SectionHeading } from './components/SectionHeading';
@@ -142,14 +143,13 @@ export default function App() {
             </motion.div>
           ) : (
             <motion.div key="home" variants={PAGE} initial="initial" animate="animate" exit="exit" className="pt-14 sm:pt-24">
-              <p className="font-mono text-xs uppercase tracking-[0.3em] text-lens">Ruang interogasi · kasus baru</p>
-              <h1 className="mt-4 text-5xl leading-[1.02] font-bold tracking-tight text-balance text-ink-bright sm:text-7xl">
-                Interogasi klaimnya.
-                <span className="block text-ink-muted">Bukan orangnya.</span>
+              {/* TODO: replace with the final tagline once it's decided. */}
+              <h1 className="text-5xl leading-[1.02] font-bold tracking-tight text-balance text-ink-bright sm:text-7xl">
+                Tagline soon to be updated.
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-relaxed text-ink">
-                Tempel klaim politik atau tautan berita. OWI mencocokkannya dengan arsip cek fakta, dokumen resmi, dan putusan
-                pengadilan, lalu menunjukkan buktinya.
+                Paste a political claim or a news link. OWI checks it against fact-check archives, official records and court
+                rulings, then shows you the evidence.
               </p>
 
               <div className="mt-10">
@@ -211,6 +211,8 @@ export default function App() {
                   )
                 )}
               </AnimatePresence>
+
+              <ModelInsights />
             </motion.div>
           )}
         </AnimatePresence>
