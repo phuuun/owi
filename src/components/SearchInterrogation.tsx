@@ -60,7 +60,7 @@ export function SearchInterrogation({ value, onChange, onSubmit, isLoading }: Se
       <motion.div
         initial={false}
         animate={armed ? 'armed' : 'idle'}
-        className={`relative rounded-sm border bg-slate/60 px-5 py-4 transition-colors duration-300 sm:px-7 ${
+        className={`relative rounded-sm border bg-slate/85 px-5 py-4 backdrop-blur-[2px] transition-colors duration-300 sm:px-7 ${
           armed ? 'border-line-strong' : 'border-line'
         }`}
       >
@@ -76,6 +76,19 @@ export function SearchInterrogation({ value, onChange, onSubmit, isLoading }: Se
             transition={{ type: 'spring', stiffness: 380, damping: 24 }}
           />
         ))}
+
+        {/* Scope crosshair: hairlines run from the frame out to the screen edges. */}
+        {['right-full bg-linear-to-l', 'left-full bg-linear-to-r'].map((side) => (
+          <span
+            key={side}
+            aria-hidden="true"
+            className={`pointer-events-none absolute top-1/2 h-px w-screen to-transparent ${side} ${armed ? 'from-lens/60' : 'from-line-strong'}`}
+          />
+        ))}
+        <span
+          aria-hidden="true"
+          className={`pointer-events-none absolute top-full left-1/2 h-10 w-px bg-linear-to-b to-transparent ${armed ? 'from-lens/60' : 'from-line-strong'}`}
+        />
 
         {/* Lens sweep: once per focus, continuously while the lookup runs. */}
         {!reduceMotion && (isLoading || focusCount > 0) && (

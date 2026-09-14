@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import { AnimatePresence, MotionConfig, motion, type Variants } from 'framer-motion';
+import { AnimatePresence, MotionConfig, motion, useReducedMotion, type Variants } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { CaseFileCard } from './components/CaseFileCard';
+import { DetectiveMascot } from './components/DetectiveMascot';
 import { EvidenceBoard } from './components/EvidenceBoard';
 import { EvidenceBreakdown, type EvidenceFocus } from './components/EvidenceBreakdown';
 import { EvidenceTimeline } from './components/EvidenceTimeline';
+import { FilmCountdown } from './components/FilmCountdown';
 import { FocusShift } from './components/FocusShift';
 import { HistorySidebar } from './components/HistorySidebar';
 import { Layout } from './components/Layout';
 import { ModelInsights } from './components/ModelInsights';
-import { ScanningPulse } from './components/ScanningPulse';
+import { NoirSkyline } from './components/NoirSkyline';
 import { SearchInterrogation } from './components/SearchInterrogation';
 import { SectionHeading } from './components/SectionHeading';
 import { TokenExplanation } from './components/TokenExplanation';
@@ -17,10 +19,29 @@ import { factCheck, fetchSamples, toRequest } from './lib/api';
 import { hostname } from './lib/format';
 import type { CaseHistoryEntry, SampleCase } from './types';
 
+interface Iris {
+  /** Circle center in px from the top of the view element. */
+  cy: number;
+  reduce: boolean;
+}
+
+const circle = (r: number, cy: number) => `circle(${r}px at 50% ${cy}px)`;
+
+// Cartoon iris wipe between views: the old view closes to a point, the new one opens from it.
 const PAGE: Variants = {
-  initial: { opacity: 0, y: 24 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
-  exit: { opacity: 0, y: -16, transition: { duration: 0.22, ease: 'easeIn' } },
+  initial: ({ cy, reduce }: Iris) => (reduce ? { opacity: 0 } : { clipPath: circle(0, cy) }),
+  animate: ({ cy, reduce }: Iris) =>
+    reduce
+      ? { opacity: 1 }
+      : {
+          clipPath: [circle(0, cy), circle(2400, cy)],
+          transition: { duration: 0.65, ease: [0.5, 0, 0.3, 1] },
+          transitionEnd: { clipPath: 'none' },
+        },
+  exit: ({ cy, reduce }: Iris) =>
+    reduce
+      ? { opacity: 0 }
+      : { clipPath: [circle(2400, cy), circle(0, cy)], transition: { duration: 0.45, ease: [0.6, 0, 0.8, 0.4] } },
 };
 
 const sampleValue = ({ input }: SampleCase) => ('url' in input ? input.url : input.text);
@@ -39,6 +60,14 @@ export default function App() {
   const entrySeq = useRef(0);
 
   const current = archive.find((entry) => entry.id === openId) ?? null;
+
+  const reduceMotion = useReducedMotion();
+  // Center the iris on the visible screen. Views start below the 56px header, and
+  // the entering view opens after the scroll has been reset to the top.
+  const iris = (entering: boolean): Iris => ({
+    reduce: Boolean(reduceMotion),
+    cy: (entering ? 0 : window.scrollY) + window.innerHeight / 2 - 56,
+  });
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -99,9 +128,17 @@ export default function App() {
   return (
     <MotionConfig reducedMotion="user">
       <Layout archiveCount={archive.length} onHome={goHome} onOpenArchive={() => setArchiveOpen(true)}>
-        <AnimatePresence mode="wait" onExitComplete={() => window.scrollTo({ top: 0 })}>
+        <AnimatePresence mode="wait" custom={iris(false)} onExitComplete={() => window.scrollTo({ top: 0 })}>
           {current ? (
-            <motion.div key={current.id} variants={PAGE} initial="initial" animate="animate" exit="exit" className="pt-8 sm:pt-10">
+            <motion.div
+              key={current.id}
+              custom={iris(true)}
+              variants={PAGE}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="pt-8 sm:pt-10"
+            >
               <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                 <button
                   type="button"
@@ -142,9 +179,20 @@ export default function App() {
               </FocusShift>
             </motion.div>
           ) : (
-            <motion.div key="home" variants={PAGE} initial="initial" animate="animate" exit="exit" className="pt-14 sm:pt-24">
+            <motion.div
+              key="home"
+              custom={iris(true)}
+              variants={PAGE}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="relative isolate pt-14 sm:pt-24"
+            >
+              <NoirSkyline />
+              <DetectiveMascot searching={pending !== null} className="absolute top-8 right-0 hidden w-52 lg:block xl:w-60" />
+
               {/* TODO: replace with the final tagline once it's decided. */}
-              <h1 className="text-5xl leading-[1.02] font-bold tracking-tight text-balance text-ink-bright sm:text-7xl">
+              <h1 className="text-5xl leading-[1.02] font-bold tracking-tight text-balance text-ink-bright sm:text-7xl lg:max-w-2xl">
                 Tagline soon to be updated.
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-relaxed text-ink">
@@ -165,7 +213,7 @@ export default function App() {
 
               <AnimatePresence mode="wait">
                 {pending ? (
-                  <ScanningPulse key="scanning" mode={pending} />
+                  <FilmCountdown key="countdown" mode={pending} />
                 ) : (
                   samples.length > 0 && (
                     <motion.section

@@ -109,7 +109,10 @@ src/
 └── components/
     ├── Layout             header, footer, CRT overlays
     ├── SearchInterrogation  viewfinder input (text or URL)
-    ├── ScanningPulse      radar sweep loading state
+    ├── FilmCountdown      film-leader 3-2-1 loading state
+    ├── NoirSkyline        night city backdrop behind the home hero
+    ├── DetectiveMascot    fedora-and-shades mascot, reacts while searching
+    ├── ModelInsights      model explanation, mock metrics and charts
     ├── FocusShift         blur-to-sharp lens reveal for results
     ├── CaseFileCard       case folder, verdict, confidence, entities
     ├── RubberStamp        stamp-drop animation

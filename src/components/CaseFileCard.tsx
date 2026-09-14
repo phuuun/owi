@@ -1,9 +1,10 @@
-import type { ReactNode } from 'react';
-import { motion } from 'framer-motion';
+import { useEffect, useState, type ReactNode } from 'react';
+import { animate, motion, useReducedMotion } from 'framer-motion';
 import { FolderClosed } from 'lucide-react';
 import type { EntityType, FactCheckResponse, Sentiment } from '../types';
 import { formatTime, percent } from '../lib/format';
 import { isUnverifiable, tone, verdictMeta } from '../lib/verdict';
+import { FilmStripIcon } from './FilmStripIcon';
 import { RubberStamp } from './RubberStamp';
 
 const ENTITY_TYPE: Record<EntityType, string> = { INSTITUTION: 'Lembaga', PERSON: 'Tokoh', PARTY: 'Partai' };
@@ -11,14 +12,40 @@ const SENTIMENT: Record<Sentiment, string> = { POSITIVE: 'positif', NEGATIVE: 'k
 
 const TICKS = 20;
 
+/** Rolls a number up from 0 like a score counter. */
+function useCountUp(target: number, delay: number) {
+  const reduceMotion = useReducedMotion();
+  const [shown, setShown] = useState(reduceMotion ? target : 0);
+
+  useEffect(() => {
+    if (reduceMotion) {
+      setShown(target);
+      return;
+    }
+    const controls = animate(0, target, {
+      delay,
+      duration: 1.1,
+      ease: [0.16, 1, 0.3, 1],
+      onUpdate: (v) => setShown(Math.round(v)),
+    });
+    return () => controls.stop();
+  }, [target, delay, reduceMotion]);
+
+  return shown;
+}
+
 function ConfidenceMeter({ value, delay }: { value: number; delay: number }) {
+  const shown = useCountUp(value, delay);
   const lit = Math.round((value / 100) * TICKS);
   return (
     <div role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={value} aria-label="Keyakinan model">
-      <p className="font-mono text-3xl font-bold text-ink-bright tabular-nums">
-        {value}
-        <span className="text-lg text-ink-muted">%</span>
-      </p>
+      <div className="relative mt-4 ml-5 inline-block min-w-28 border border-ink-muted/60 bg-charcoal/70 px-4 pt-1 pb-1.5 text-center">
+        <FilmStripIcon className="absolute -top-3.5 -left-7 w-12 -rotate-[26deg]" />
+        <p className="text-3xl font-bold text-lens tabular-nums">
+          {shown}
+          <span className="text-lg">%</span>
+        </p>
+      </div>
       <div aria-hidden="true" className="mt-2 flex gap-[3px]">
         {Array.from({ length: TICKS }, (_, i) => (
           <motion.span
