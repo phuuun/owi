@@ -1,19 +1,28 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { analyzeClaim, MOCK_DATABASE, parseAnalyzeResponse, SCENARIOS } from './api.ts';
+import { test } from 'node:test';
+import { buildResponse } from '../../server/factCheck.ts';
+import { parseFactCheckResponse, toRequest } from './api.ts';
 
-test('parseAnalyzeResponse accepts every mock case and rejects malformed payloads', () => {
-  for (const r of Object.values(MOCK_DATABASE)) assert.equal(parseAnalyzeResponse(r), r);
-
-  const good = MOCK_DATABASE['false-claim'];
-  for (const bad of [null, {}, { ...good, verdict: 'HOAX' }, { ...good, evidence: undefined }, { ...good, confidence: '0.9' }]) {
-    assert.throws(() => parseAnalyzeResponse(bad), /kontrak API/);
-  }
+test('toRequest sends a lone link as a URL and everything else as text', () => {
+  assert.deepEqual(toRequest('  https://kompas.com/a  '), { url: 'https://kompas.com/a' });
+  assert.deepEqual(toRequest('Menurut https://kompas.com/a utang naik'), { text: 'Menurut https://kompas.com/a utang naik' });
+  assert.deepEqual(toRequest('kompas.com/a'), { text: 'kompas.com/a' });
 });
 
-test('each dev scenario hits its own mock case', async () => {
-  const verdicts = [];
-  for (const s of SCENARIOS) verdicts.push((await analyzeClaim({ text: s.text })).verdict);
-  assert.deepEqual(verdicts, ['FALSE', 'TRUE', 'MISLEADING', 'OPINION', 'UNVERIFIABLE']);
-  await assert.rejects(analyzeClaim({ text: '   ' }));
+test('parseFactCheckResponse accepts server output and rejects contract breaks', () => {
+  const good = buildResponse({ kind: 'text', value: 'Utang meroket Rp20.000 triliun sebulan' });
+  assert.equal(parseFactCheckResponse(good), good);
+
+  const bad = [
+    null,
+    {},
+    { ...good, verdict: 'HOAX' },
+    { ...good, confidence: '0.9' },
+    { ...good, evidence: undefined },
+    { ...good, evidence: [{ ...good.evidence[0], stance: 'MAYBE' }] },
+    { ...good, article: { ...good.article, paragraphs: 'teks' } },
+    { ...good, input: { kind: 'file', value: 'a' } },
+    { ...good, timeline: [{ date: '2024-01-01' }] },
+  ];
+  for (const payload of bad) assert.throws(() => parseFactCheckResponse(payload), /kontrak API/);
 });

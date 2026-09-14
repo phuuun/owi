@@ -1,12 +1,14 @@
 import { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
-import type { SessionHistoryEntry } from '../types';
-import { verdictInfo } from '../lib/verdict';
+import type { CaseHistoryEntry } from '../types';
+import { formatTime } from '../lib/format';
+import { verdictMeta } from '../lib/verdict';
+import { RubberStamp } from './RubberStamp';
 
 interface HistorySidebarProps {
-  history: SessionHistoryEntry[];
+  history: CaseHistoryEntry[];
   activeId: string | null;
-  onSelect: (entry: SessionHistoryEntry) => void;
+  onSelect: (entry: CaseHistoryEntry) => void;
   onClear: () => void;
   isOpen: boolean;
   onClose: () => void;
@@ -25,32 +27,37 @@ export function HistorySidebar({ history, activeId, onSelect, onClear, isOpen, o
   return (
     <dialog
       ref={ref}
-      aria-label="Riwayat"
+      aria-labelledby="archive-title"
       onClose={onClose}
       onClick={(e) => e.target === e.currentTarget && onClose()}
-      className="m-0 ml-auto h-dvh max-h-dvh w-80 max-w-[85vw] border-0 border-l border-line bg-bg p-0 text-fg backdrop:bg-black/20 backdrop:backdrop-blur-sm"
+      className="m-0 ml-auto h-dvh max-h-dvh w-96 max-w-[88vw] translate-x-6 border-0 border-l border-line bg-newsprint p-0 text-ink opacity-0 transition-[opacity,translate,display,overlay] duration-300 transition-discrete backdrop:bg-black/60 open:translate-x-0 open:opacity-100 starting:open:translate-x-6 starting:open:opacity-0"
     >
       <div className="flex h-full flex-col">
-        <div className="flex h-12 shrink-0 items-center justify-between px-6">
-          <h2 className="font-semibold tracking-tight">Riwayat</h2>
-          <div className="flex items-center gap-4 text-sm text-muted">
+        <div className="flex h-14 shrink-0 items-center justify-between border-b border-line px-5">
+          <h2 id="archive-title" className="font-mono text-sm uppercase tracking-[0.25em] text-ink-bright">
+            Arsip kasus
+          </h2>
+          <div className="flex items-center gap-4 font-mono text-xs uppercase tracking-[0.2em] text-ink-muted">
             {history.length > 0 && (
-              <button type="button" onClick={onClear} className="transition-colors hover:text-fg">
-                Hapus
+              <button type="button" onClick={onClear} className="transition-colors hover:text-ink-bright">
+                Kosongkan
               </button>
             )}
-            <button type="button" onClick={onClose} aria-label="Tutup" className="transition-colors hover:text-fg">
+            <button type="button" onClick={onClose} aria-label="Tutup arsip" className="transition-colors hover:text-ink-bright">
               <X className="size-5" strokeWidth={1.5} />
             </button>
           </div>
         </div>
 
         {history.length === 0 ? (
-          <p className="px-6 pt-4 text-sm text-muted">Belum ada klaim. Riwayat hilang saat halaman dimuat ulang.</p>
+          <p className="px-5 pt-5 text-sm leading-relaxed text-ink-muted">
+            Belum ada kasus. Arsip hanya tersimpan selama halaman ini terbuka.
+          </p>
         ) : (
-          <ul className="flex-1 space-y-1 overflow-y-auto px-3 pb-6">
+          <ul className="flex-1 space-y-2 overflow-y-auto p-3">
             {history.map((entry) => {
-              const v = verdictInfo(entry.response);
+              const v = verdictMeta(entry.response);
+              const active = entry.id === activeId;
               return (
                 <li key={entry.id}>
                   <button
@@ -59,14 +66,19 @@ export function HistorySidebar({ history, activeId, onSelect, onClear, isOpen, o
                       onSelect(entry);
                       onClose();
                     }}
-                    className={`w-full rounded-xl px-3 py-3 text-left transition-colors hover:bg-soft ${
-                      entry.id === activeId ? 'bg-soft' : ''
+                    aria-current={active || undefined}
+                    className={`paper w-full rounded-sm border px-4 py-3 text-left transition-colors hover:border-line-strong ${
+                      active ? 'border-lens/60' : 'border-line'
                     }`}
                   >
-                    <p className="line-clamp-2 text-sm">{entry.inputText}</p>
-                    <p className="mt-1 text-xs text-muted">
-                      <span className={v.text}>{v.label}</span> · {entry.timestamp}
-                    </p>
+                    <span className="flex items-center justify-between gap-3">
+                      <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-lens">{entry.response.case_id}</span>
+                      <RubberStamp size="sm" label={v.stamp} color={v.color} />
+                    </span>
+                    <span className="mt-2 line-clamp-2 block text-sm text-ink">{entry.response.claim_extracted}</span>
+                    <span className="mt-1 block font-mono text-[11px] text-ink-muted">
+                      {v.label} · {formatTime(entry.openedAt)}
+                    </span>
                   </button>
                 </li>
               );
