@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import type { CaseHistoryEntry } from '../types';
-import { formatTime } from '../lib/format';
-import { verdictMeta } from '../lib/verdict';
+import { useI18n } from '../lib/i18n';
+import { climateMeta } from '../lib/climate';
 import { RubberStamp } from './RubberStamp';
 
 interface HistorySidebarProps {
@@ -15,6 +15,7 @@ interface HistorySidebarProps {
 }
 
 export function HistorySidebar({ history, activeId, onSelect, onClear, isOpen, onClose }: HistorySidebarProps) {
+  const { t, fmt } = useI18n();
   const ref = useRef<HTMLDialogElement>(null);
 
   // Native modal dialog: focus trap, Esc to close and backdrop for free.
@@ -35,28 +36,31 @@ export function HistorySidebar({ history, activeId, onSelect, onClear, isOpen, o
       <div className="flex h-full flex-col">
         <div className="flex h-14 shrink-0 items-center justify-between border-b border-line px-5">
           <h2 id="archive-title" className="font-mono text-sm uppercase tracking-[0.25em] text-ink-bright">
-            Arsip kasus
+            {t.archive.title}
           </h2>
           <div className="flex items-center gap-4 font-mono text-xs uppercase tracking-[0.2em] text-ink-muted">
             {history.length > 0 && (
               <button type="button" onClick={onClear} className="transition-colors hover:text-ink-bright">
-                Kosongkan
+                {t.archive.clear}
               </button>
             )}
-            <button type="button" onClick={onClose} aria-label="Tutup arsip" className="transition-colors hover:text-ink-bright">
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={t.archive.close}
+              className="transition-colors hover:text-ink-bright"
+            >
               <X className="size-5" strokeWidth={1.5} />
             </button>
           </div>
         </div>
 
         {history.length === 0 ? (
-          <p className="px-5 pt-5 text-sm leading-relaxed text-ink-muted">
-            Belum ada kasus. Arsip hanya tersimpan selama halaman ini terbuka.
-          </p>
+          <p className="px-5 pt-5 text-sm leading-relaxed text-ink-muted">{t.archive.empty}</p>
         ) : (
           <ul className="flex-1 space-y-2 overflow-y-auto p-3">
             {history.map((entry) => {
-              const v = verdictMeta(entry.response);
+              const c = climateMeta(entry.response, t);
               const active = entry.id === activeId;
               return (
                 <li key={entry.id}>
@@ -73,11 +77,13 @@ export function HistorySidebar({ history, activeId, onSelect, onClear, isOpen, o
                   >
                     <span className="flex items-center justify-between gap-3">
                       <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-lens">{entry.response.case_id}</span>
-                      <RubberStamp size="sm" label={v.stamp} color={v.color} />
+                      <RubberStamp size="sm" label={c.stamp} color={c.color} />
                     </span>
-                    <span className="mt-2 line-clamp-2 block text-sm text-ink">{entry.response.claim_extracted}</span>
+                    <span className="mt-2 line-clamp-2 block text-sm text-ink">
+                      {entry.response.post?.title ?? entry.response.input.value}
+                    </span>
                     <span className="mt-1 block font-mono text-[11px] text-ink-muted">
-                      {v.label} · {formatTime(entry.openedAt)}
+                      {c.label} · {fmt.time(entry.openedAt)}
                     </span>
                   </button>
                 </li>

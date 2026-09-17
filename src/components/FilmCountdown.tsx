@@ -1,12 +1,10 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useI18n } from '../lib/i18n';
 import { FilmStripIcon } from './FilmStripIcon';
 
 const TICK_MS = 800;
 const COUNT = [3, 2, 1];
-
-const TARGETS = { url: ['Article link', 'Claim extraction'], text: ['Claim text'] };
-const COMMON = ['Fact-check archives', 'Official records', 'Court rulings'];
 
 function Sprockets({ side }: { side: 'left' | 'right' }) {
   return (
@@ -24,10 +22,11 @@ function Sprockets({ side }: { side: 'left' | 'right' }) {
 /**
  * Loading state as an old film leader: a clock wipe sweeps the rings once per
  * tick while the countdown runs 3, 2, 1, and the plaque names what is being
- * searched. It loops until the response arrives.
+ * read. It loops until the response arrives.
  */
-export function FilmCountdown({ mode }: { mode: 'text' | 'url' }) {
-  const targets = [...TARGETS[mode], ...COMMON];
+export function FilmCountdown() {
+  const { t } = useI18n();
+  const targets = t.loading.targets;
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
@@ -49,7 +48,7 @@ export function FilmCountdown({ mode }: { mode: 'text' | 'url' }) {
       className="relative mt-10 overflow-hidden rounded-sm border border-line"
     >
       <span role="status" className="sr-only">
-        Checking the claim…
+        {t.loading.status}
       </span>
 
       <div
@@ -61,7 +60,7 @@ export function FilmCountdown({ mode }: { mode: 'text' | 'url' }) {
 
         <div className="absolute top-5 left-1/2 z-10 w-60 -translate-x-1/2 border border-[#efe7d6]/60 bg-[#1b1a17]/85 px-4 pt-1 pb-1.5 text-center">
           <FilmStripIcon className="absolute -top-4 -left-9 w-14 -rotate-[28deg]" />
-          <p className="text-xs text-[#efe7d6]">Now checking</p>
+          <p className="text-xs text-[#efe7d6]">{t.loading.reading}</p>
           <AnimatePresence mode="wait" initial={false}>
             <motion.p
               key={target}

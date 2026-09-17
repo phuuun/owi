@@ -1,84 +1,110 @@
-import type { ApiError, FactCheckRequest, FactCheckResponse, SampleCase } from '../types.ts';
+import type { AnalyzeResponse, ApiError, Lang, SampleCase } from '../types.ts';
+import { DICT } from './strings.ts';
 
-/** A lone pasted link is an article URL; anything else is claim text. */
-export function toRequest(raw: string): FactCheckRequest {
-  const value = raw.trim();
-  return /^https?:\/\/\S+$/i.test(value) ? { url: value } : { text: value };
-}
-
-async function call<T>(path: string, init: RequestInit, parse: (data: unknown) => T): Promise<T> {
+/** `Accept-Language` picks the language the server writes its own prose in. */
+async function call<T>(path: string, lang: Lang, init: RequestInit, parse: (data: unknown, lang: Lang) => T): Promise<T> {
+  const t = DICT[lang].api;
   let res: Response;
   try {
-    res = await fetch(path, { ...init, headers: { Accept: 'application/json', ...init.headers } });
+    res = await fetch(path, {
+      ...init,
+      headers: { Accept: 'application/json', 'Accept-Language': lang, ...init.headers },
+    });
   } catch (err) {
     if (init.signal?.aborted) throw err;
-    throw new Error('Server OWI tidak dapat dihubungi. Pastikan API berjalan (npm run dev).');
+    throw new Error(t.unreachable);
   }
 
   const data: unknown = await res.json().catch(() => null);
   if (!res.ok) {
-    throw new Error((data as ApiError | null)?.error?.message ?? `Permintaan gagal (${res.status}).`);
+    throw new Error((data as ApiError | null)?.error?.message ?? t.failed(res.status));
   }
-  return parse(data);
+  return parse(data, lang);
 }
 
-export const factCheck = (request: FactCheckRequest, signal?: AbortSignal) =>
+export const analyze = (url: string, lang: Lang, signal?: AbortSignal) =>
   call(
-    '/api/fact-check',
-    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request), signal },
-    parseFactCheckResponse,
+    '/api/analyze',
+    lang,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }), signal },
+    parseAnalyzeResponse,
   );
 
 /** Only the mock server has samples; callers should treat a failure as "no samples". */
-export const fetchSamples = (signal?: AbortSignal) => call('/api/samples', { signal }, parseSamples);
+export const fetchSamples = (lang: Lang, signal?: AbortSignal) => call('/api/samples', lang, { signal }, parseSamples);
 
-// Backend output is untrusted: a missing array or unknown enum would crash the
-// report view, so reject malformed payloads with a readable error instead.
+// Backend output is untrusted: a missing array or an unknown enum would crash
+// the report view, so reject malformed payloads with a readable error instead.
 
-const VERDICTS: readonly unknown[] = ['TRUE', 'MISLEADING', 'FALSE', 'UNVERIFIABLE', 'OPINION'];
-const STANCES: readonly unknown[] = ['SUPPORTS', 'REFUTES', 'UNRELATED'];
+const CLIMATES: readonly unknown[] = ['NEUTRAL', 'LEANING', 'ASTROTURFED', 'INSUFFICIENT'];
+const STANCES: readonly unknown[] = ['PRO', 'CONTRA', 'NEUTRAL'];
+const LABELS: readonly unknown[] = ['BUZZER', 'ORGANIC', 'UNCLEAR'];
+const PLATFORMS: readonly unknown[] = ['YOUTUBE', 'INSTAGRAM', 'TIKTOK', 'X', 'FACEBOOK'];
 
 type Obj = Record<string, unknown>;
 const isObj = (v: unknown): v is Obj => typeof v === 'object' && v !== null;
 const allStr = (o: Obj, keys: string[]) => keys.every((k) => typeof o[k] === 'string');
+const allNum = (o: Obj, keys: string[]) => keys.every((k) => typeof o[k] === 'number');
+const strArray = (v: unknown) => Array.isArray(v) && v.every((x) => typeof x === 'string');
 
-const isEvidence = (e: unknown) =>
-  isObj(e) && allStr(e, ['id', 'title', 'source', 'source_type', 'url', 'published', 'snippet']) && STANCES.includes(e.stance);
+const isComment = (c: unknown) =>
+  isObj(c) &&
+  allStr(c, ['id', 'author', 'posted_at', 'text']) &&
+  allNum(c, ['likes', 'score']) &&
+  STANCES.includes(c.stance) &&
+  LABELS.includes(c.label) &&
+  (c.cluster_id === null || typeof c.cluster_id === 'string') &&
+  isObj(c.account) &&
+  allNum(c.account, ['age_days', 'followers', 'posts_per_day']) &&
+  typeof c.account.default_avatar === 'boolean';
 
-const isArticle = (a: unknown) =>
-  isObj(a) &&
-  allStr(a, ['headline', 'outlet', 'url', 'published', 'claim_quote']) &&
-  Array.isArray(a.paragraphs) &&
-  a.paragraphs.every((p) => typeof p === 'string');
+const isCluster = (c: unknown) =>
+  isObj(c) && allStr(c, ['id', 'label', 'template']) && allNum(c, ['size', 'similarity', 'window_minutes']) && strArray(c.comment_ids);
 
-const isTimelineEvent = (t: unknown) => isObj(t) && allStr(t, ['date', 'label']) && (t.kind === 'CLAIM' || t.kind === 'EVIDENCE');
+const isSignal = (s: unknown) =>
+  isObj(s) && allStr(s, ['id', 'kind', 'detail']) && typeof s.weight === 'number' && strArray(s.comment_ids);
 
-export function parseFactCheckResponse(data: unknown): FactCheckResponse {
+const isPost = (p: unknown) =>
+  isObj(p) && PLATFORMS.includes(p.platform) && allStr(p, ['url', 'title', 'author', 'published']) && allNum(p, ['comment_count', 'sampled']);
+
+const isLean = (l: unknown) =>
+  isObj(l) && typeof l.target === 'string' && (l.direction === 'PRO' || l.direction === 'CONTRA') && typeof l.share === 'number';
+
+const isBucket = (b: unknown) => isObj(b) && typeof b.start === 'string' && allNum(b, ['total', 'buzzer']);
+
+export function parseAnalyzeResponse(data: unknown, lang: Lang = 'id'): AnalyzeResponse {
   const ok =
     isObj(data) &&
-    allStr(data, ['case_id', 'checked_at', 'claim_extracted', 'topic']) &&
-    VERDICTS.includes(data.verdict) &&
-    typeof data.confidence === 'number' &&
+    allStr(data, ['case_id', 'checked_at', 'topic']) &&
+    CLIMATES.includes(data.climate) &&
+    allNum(data, ['confidence', 'buzzer_share']) &&
     isObj(data.input) &&
-    (data.input.kind === 'text' || data.input.kind === 'url') &&
+    data.input.kind === 'url' &&
     typeof data.input.value === 'string' &&
+    (data.post === null || isPost(data.post)) &&
+    (data.lean === null || isLean(data.lean)) &&
+    isObj(data.breakdown) &&
+    allNum(data.breakdown, ['pro', 'contra', 'neutral']) &&
     Array.isArray(data.entities) &&
     Array.isArray(data.explanation_tokens) &&
-    Array.isArray(data.evidence) &&
-    data.evidence.every(isEvidence) &&
+    Array.isArray(data.comments) &&
+    data.comments.every(isComment) &&
+    Array.isArray(data.clusters) &&
+    data.clusters.every(isCluster) &&
+    Array.isArray(data.signals) &&
+    data.signals.every(isSignal) &&
     Array.isArray(data.timeline) &&
-    data.timeline.every(isTimelineEvent) &&
-    (data.article === null || isArticle(data.article)) &&
-    typeof data.retrieval_empty === 'boolean';
+    data.timeline.every(isBucket) &&
+    typeof data.sample_empty === 'boolean';
 
-  if (!ok) throw new Error('Respons server tidak sesuai kontrak API.');
-  return data as unknown as FactCheckResponse;
+  if (!ok) throw new Error(DICT[lang].api.badContract);
+  return data as unknown as AnalyzeResponse;
 }
 
-function parseSamples(data: unknown): SampleCase[] {
+function parseSamples(data: unknown, lang: Lang): SampleCase[] {
   const ok =
     Array.isArray(data) &&
-    data.every((s) => isObj(s) && allStr(s, ['id', 'label']) && isObj(s.input) && ('text' in s.input || 'url' in s.input));
-  if (!ok) throw new Error('Daftar contoh tidak sesuai kontrak API.');
+    data.every((s) => isObj(s) && allStr(s, ['id', 'label', 'note', 'url']) && CLIMATES.includes(s.climate));
+  if (!ok) throw new Error(DICT[lang].api.badSamples);
   return data as SampleCase[];
 }

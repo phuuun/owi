@@ -6,6 +6,6 @@
     "verbatimModuleSyntax": true,
     "erasableSyntaxOnly": true
   },
-  "include": ["./**/*.ts", "../src/types.ts"],
+  "include": ["./**/*.ts", "../src/types.ts", "../src/lib/platform.ts"],
   "exclude": []
 }

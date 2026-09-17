@@ -2,21 +2,23 @@ import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, MotionConfig, motion, useReducedMotion, type Variants } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { CaseFileCard } from './components/CaseFileCard';
+import { ClusterBoard } from './components/ClusterBoard';
+import { CommentDossier, type DossierFocus } from './components/CommentDossier';
 import { DetectiveMascot } from './components/DetectiveMascot';
-import { EvidenceBoard } from './components/EvidenceBoard';
-import { EvidenceBreakdown, type EvidenceFocus } from './components/EvidenceBreakdown';
-import { EvidenceTimeline } from './components/EvidenceTimeline';
 import { FilmCountdown } from './components/FilmCountdown';
 import { FocusShift } from './components/FocusShift';
 import { HistorySidebar } from './components/HistorySidebar';
 import { Layout } from './components/Layout';
 import { ModelInsights } from './components/ModelInsights';
 import { NoirSkyline } from './components/NoirSkyline';
+import { PostingTimeline } from './components/PostingTimeline';
 import { SearchInterrogation } from './components/SearchInterrogation';
 import { SectionHeading } from './components/SectionHeading';
 import { TokenExplanation } from './components/TokenExplanation';
-import { factCheck, fetchSamples, toRequest } from './lib/api';
+import { analyze, fetchSamples } from './lib/api';
+import { CLIMATE_COLOR, tone } from './lib/climate';
 import { hostname } from './lib/format';
+import { useI18n } from './lib/i18n';
 import type { CaseHistoryEntry, SampleCase } from './types';
 
 interface Iris {
@@ -44,18 +46,18 @@ const PAGE: Variants = {
       : { clipPath: [circle(2400, cy), circle(0, cy)], transition: { duration: 0.45, ease: [0.6, 0, 0.8, 0.4] } },
 };
 
-const sampleValue = ({ input }: SampleCase) => ('url' in input ? input.url : input.text);
 const cleanUrl = () => window.location.pathname + window.location.search;
 
 export default function App() {
+  const { lang, t } = useI18n();
   const [draft, setDraft] = useState('');
-  const [pending, setPending] = useState<'text' | 'url' | null>(null);
+  const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [archive, setArchive] = useState<CaseHistoryEntry[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [samples, setSamples] = useState<SampleCase[]>([]);
-  const [focus, setFocus] = useState<EvidenceFocus | null>(null);
+  const [focus, setFocus] = useState<DossierFocus | null>(null);
   const inflight = useRef<AbortController | null>(null);
   const entrySeq = useRef(0);
 
@@ -72,9 +74,23 @@ export default function App() {
   useEffect(() => {
     const ctrl = new AbortController();
     // Only the mock server serves samples; without them the section stays hidden.
-    fetchSamples(ctrl.signal).then(setSamples, () => {});
+    fetchSamples(lang, ctrl.signal).then(setSamples, () => {});
     return () => ctrl.abort();
-  }, []);
+  }, [lang]);
+
+  // A report carries prose the server wrote — the topic, each finding, each
+  // cluster's name — so a reading fetched in the other language is refreshed
+  // when it is on screen. The language guard is what stops this from looping.
+  useEffect(() => {
+    if (!current || current.lang === lang) return;
+    const ctrl = new AbortController();
+    const { id } = current;
+    analyze(current.response.input.value, lang, ctrl.signal).then(
+      (response) => setArchive((prev) => prev.map((entry) => (entry.id === id ? { ...entry, lang, response } : entry))),
+      () => {},
+    );
+    return () => ctrl.abort();
+  }, [lang, current]);
 
   // Each opened report is a history entry, so Back returns to the interrogation room.
   useEffect(() => {
@@ -99,31 +115,37 @@ export default function App() {
     window.history.pushState(null, '', cleanUrl());
   };
 
-  const investigate = async (raw: string) => {
+  const investigate = async (url: string) => {
     inflight.current?.abort();
     const ctrl = new AbortController();
     inflight.current = ctrl;
-    const request = toRequest(raw);
-    setDraft(raw);
+    setDraft(url);
     setError(null);
-    setPending('url' in request ? 'url' : 'text');
+    setPending(true);
 
     try {
-      const response = await factCheck(request, ctrl.signal);
-      const entry: CaseHistoryEntry = { id: `entry-${++entrySeq.current}`, openedAt: new Date().toISOString(), response };
+      const response = await analyze(url, lang, ctrl.signal);
+      const entry: CaseHistoryEntry = {
+        id: `entry-${++entrySeq.current}`,
+        openedAt: new Date().toISOString(),
+        lang,
+        response,
+      };
       setArchive((prev) => [entry, ...prev].slice(0, 20));
       openCase(entry);
     } catch (err) {
-      if (!ctrl.signal.aborted) setError(err instanceof Error ? err.message : 'Terjadi kendala teknis saat memproses klaim.');
+      if (!ctrl.signal.aborted) {
+        setError(err instanceof Error ? err.message : t.home.errorFallback);
+      }
     } finally {
       if (inflight.current === ctrl) {
         inflight.current = null;
-        setPending(null);
+        setPending(false);
       }
     }
   };
 
-  const selectEvidence = (id: string) => setFocus((prev) => ({ id, seq: (prev?.seq ?? 0) + 1 }));
+  const selectFocus = (id: string) => setFocus((prev) => ({ id, seq: (prev?.seq ?? 0) + 1 }));
 
   return (
     <MotionConfig reducedMotion="user">
@@ -146,35 +168,23 @@ export default function App() {
                   className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-ink-muted transition-colors hover:text-ink-bright"
                 >
                   <ArrowLeft className="size-4" />
-                  Kasus baru
+                  {t.home.newCase}
                 </button>
-                {current.response.input.kind === 'url' && (
-                  <a
-                    href={current.response.input.value}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="min-w-0 truncate font-mono text-xs text-ink-muted transition-colors hover:text-ink-bright"
-                  >
-                    {hostname(current.response.input.value)}
-                  </a>
-                )}
+                <a
+                  href={current.response.input.value}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="min-w-0 truncate font-mono text-xs text-ink-muted transition-colors hover:text-ink-bright"
+                >
+                  {hostname(current.response.input.value)}
+                </a>
               </div>
 
               <FocusShift className="space-y-16">
                 <CaseFileCard response={current.response} />
-                <EvidenceBoard response={current.response} activeId={focus?.id ?? null} onSelect={selectEvidence} />
-                <EvidenceBreakdown
-                  article={current.response.article}
-                  evidence={current.response.evidence}
-                  retrievalEmpty={current.response.retrieval_empty}
-                  focus={focus}
-                />
-                <EvidenceTimeline
-                  timeline={current.response.timeline}
-                  evidence={current.response.evidence}
-                  activeId={focus?.id ?? null}
-                  onSelect={selectEvidence}
-                />
+                <ClusterBoard response={current.response} activeId={focus?.id ?? null} onSelect={selectFocus} />
+                <CommentDossier response={current.response} focus={focus} onSelectSignal={selectFocus} />
+                <PostingTimeline timeline={current.response.timeline} />
                 <TokenExplanation tokens={current.response.explanation_tokens} />
               </FocusShift>
             </motion.div>
@@ -189,31 +199,27 @@ export default function App() {
               className="relative isolate pt-14 sm:pt-24"
             >
               <NoirSkyline />
-              <DetectiveMascot searching={pending !== null} className="absolute top-8 right-0 hidden w-52 lg:block xl:w-60" />
+              <DetectiveMascot searching={pending} className="absolute top-8 right-0 hidden w-52 lg:block xl:w-60" />
 
-              {/* TODO: replace with the final tagline once it's decided. */}
               <h1 className="text-5xl leading-[1.02] font-bold tracking-tight text-balance text-ink-bright sm:text-7xl lg:max-w-2xl">
-                Tagline soon to be updated.
+                {t.home.tagline}
               </h1>
-              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-ink">
-                Paste a political claim or a news link. OWI checks it against fact-check archives, official records and court
-                rulings, then shows you the evidence.
-              </p>
+              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-ink">{t.home.intro}</p>
 
               <div className="mt-10">
-                <SearchInterrogation value={draft} onChange={setDraft} onSubmit={investigate} isLoading={pending !== null} />
+                <SearchInterrogation value={draft} onChange={setDraft} onSubmit={investigate} isLoading={pending} />
               </div>
 
               {error && (
                 <div role="alert" className="paper mt-6 rounded-sm border border-l-4 border-line border-l-debunked px-5 py-4">
-                  <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-debunked">Gangguan sinyal</p>
+                  <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-debunked">{t.home.errorTitle}</p>
                   <p className="mt-1 text-ink">{error}</p>
                 </div>
               )}
 
               <AnimatePresence mode="wait">
                 {pending ? (
-                  <FilmCountdown key="countdown" mode={pending} />
+                  <FilmCountdown key="countdown" />
                 ) : (
                   samples.length > 0 && (
                     <motion.section
@@ -226,10 +232,10 @@ export default function App() {
                     >
                       <SectionHeading
                         id="samples-title"
-                        title="Berkas contoh"
+                        title={t.home.samplesTitle}
                         aside={
                           <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-muted">
-                            Data tiruan dari server mock
+                            {t.home.samplesAside}
                           </span>
                         }
                       />
@@ -238,19 +244,15 @@ export default function App() {
                           <motion.li key={sample.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * i }}>
                             <button
                               type="button"
-                              onClick={() => investigate(sampleValue(sample))}
+                              onClick={() => investigate(sample.url)}
+                              style={tone(CLIMATE_COLOR[sample.climate])}
                               className="paper flex h-full w-full flex-col rounded-sm border border-line p-4 text-left transition-colors hover:border-lens/60"
                             >
-                              <span className="flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.2em] text-ink-muted">
-                                <span className="text-lens">{sample.id}</span>
-                                <span>{'url' in sample.input ? 'Tautan' : 'Teks'}</span>
-                              </span>
-                              <span className="mt-2 font-mono text-sm font-bold uppercase tracking-[0.15em] text-ink-bright">
+                              <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-lens">{sample.id}</span>
+                              <span className="mt-2 font-mono text-sm font-bold uppercase tracking-[0.15em] text-(--tone)">
                                 {sample.label}
                               </span>
-                              <span className="mt-1 line-clamp-2 text-sm text-ink-muted">
-                                {'url' in sample.input ? hostname(sample.input.url) : sample.input.text}
-                              </span>
+                              <span className="mt-2 text-sm leading-relaxed text-ink-muted">{sample.note}</span>
                             </button>
                           </motion.li>
                         ))}

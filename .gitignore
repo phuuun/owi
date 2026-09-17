@@ -6,3 +6,5 @@ coverage/
 *.log
 .env*
 !.env.example
+buzzer_data/
+__pycache__/

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { tone } from '../lib/verdict';
+import { tone } from '../lib/climate';
 
 interface RubberStampProps {
   label: string;
@@ -15,7 +15,7 @@ const TILT = -8;
 
 /**
  * An ink stamp that drops onto the page: starts oversized and tilted, lands
- * with a stiff spring, and leaves a brief ink ring. Decorative: the verdict is
+ * with a stiff spring, and leaves a brief ink ring. Decorative: the reading is
  * always stated in text next to it.
  */
 export function RubberStamp({ label, color, caption, delay = 0, size = 'lg', className = '' }: RubberStampProps) {

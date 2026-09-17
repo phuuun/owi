@@ -1,11 +1,12 @@
 import { setTimeout as sleep } from 'node:timers/promises';
 import express, { type ErrorRequestHandler, type Response } from 'express';
 import type { ApiError } from '../src/types.ts';
-import { buildResponse, parseInput, RequestError } from './factCheck.ts';
-import { SAMPLES } from './mock/index.ts';
+import { buildResponse, parseInput, RequestError } from './analyze.ts';
+import { langOf, MESSAGES } from './messages.ts';
+import { samples } from './mock/index.ts';
 
 export interface AppOptions {
-  /** Simulated retrieval time, so the client's scanning state is visible in dev. */
+  /** Simulated collection time, so the client's scanning state is visible in dev. */
   latencyMs?: number;
 }
 
@@ -23,30 +24,32 @@ export function createApp({ latencyMs = 0 }: AppOptions = {}) {
     res.json({ status: 'ok', mode: 'mock' });
   });
 
-  app.get('/api/samples', (_req, res) => {
-    res.json(SAMPLES);
+  app.get('/api/samples', (req, res) => {
+    res.json(samples(langOf(req.headers['accept-language'])));
   });
 
-  app.post('/api/fact-check', async (req, res) => {
-    const input = parseInput(req.body);
+  app.post('/api/analyze', async (req, res) => {
+    const lang = langOf(req.headers['accept-language']);
+    const input = parseInput(req.body, lang);
     if (latencyMs > 0) await sleep(latencyMs);
-    res.json(buildResponse(input));
+    res.json(buildResponse(input, lang));
   });
 
-  app.use('/api', (_req, res) => {
-    sendError(res, 404, 'NOT_FOUND', 'Endpoint tidak ditemukan.');
+  app.use('/api', (req, res) => {
+    sendError(res, 404, 'NOT_FOUND', MESSAGES[langOf(req.headers['accept-language'])].notFound);
   });
 
-  const onError: ErrorRequestHandler = (err, _req, res, _next) => {
+  const onError: ErrorRequestHandler = (err, req, res, _next) => {
+    const msg = MESSAGES[langOf(req.headers['accept-language'])];
     if (err instanceof RequestError) {
       sendError(res, 400, err.code, err.message);
     } else if (err?.type === 'entity.parse.failed') {
-      sendError(res, 400, 'INVALID_JSON', 'Isi permintaan harus berupa JSON yang valid.');
+      sendError(res, 400, 'INVALID_JSON', msg.invalidJson);
     } else if (err?.type === 'entity.too.large') {
-      sendError(res, 413, 'PAYLOAD_TOO_LARGE', 'Isi permintaan terlalu besar.');
+      sendError(res, 413, 'PAYLOAD_TOO_LARGE', msg.payloadTooLarge);
     } else {
       console.error(err);
-      sendError(res, 500, 'INTERNAL', 'Terjadi kendala di server.');
+      sendError(res, 500, 'INTERNAL', msg.internal);
     }
   };
   app.use(onError);

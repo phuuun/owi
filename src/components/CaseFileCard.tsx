@@ -1,14 +1,13 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { animate, motion, useReducedMotion } from 'framer-motion';
 import { FolderClosed } from 'lucide-react';
-import type { EntityType, FactCheckResponse, Sentiment } from '../types';
-import { formatTime, percent } from '../lib/format';
-import { isUnverifiable, tone, verdictMeta } from '../lib/verdict';
+import type { AnalyzeResponse, Stance } from '../types';
+import { percent } from '../lib/format';
+import { useI18n } from '../lib/i18n';
+import { PLATFORM_LABEL } from '../lib/platform';
+import { climateMeta, isInsufficient, leanLabel, STANCE_COLOR, tone } from '../lib/climate';
 import { FilmStripIcon } from './FilmStripIcon';
 import { RubberStamp } from './RubberStamp';
-
-const ENTITY_TYPE: Record<EntityType, string> = { INSTITUTION: 'Lembaga', PERSON: 'Tokoh', PARTY: 'Partai' };
-const SENTIMENT: Record<Sentiment, string> = { POSITIVE: 'positif', NEGATIVE: 'kritis', NEUTRAL: 'netral' };
 
 const TICKS = 20;
 
@@ -35,10 +34,11 @@ function useCountUp(target: number, delay: number) {
 }
 
 function ConfidenceMeter({ value, delay }: { value: number; delay: number }) {
+  const { t } = useI18n();
   const shown = useCountUp(value, delay);
   const lit = Math.round((value / 100) * TICKS);
   return (
-    <div role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={value} aria-label="Keyakinan model">
+    <div role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={value} aria-label={t.caseFile.confidence}>
       <div className="relative mt-4 ml-5 inline-block min-w-28 border border-ink-muted/60 bg-charcoal/70 px-4 pt-1 pb-1.5 text-center">
         <FilmStripIcon className="absolute -top-3.5 -left-7 w-12 -rotate-[26deg]" />
         <p className="text-3xl font-bold text-lens tabular-nums">
@@ -61,6 +61,41 @@ function ConfidenceMeter({ value, delay }: { value: number; delay: number }) {
   );
 }
 
+const ORDER: Stance[] = ['PRO', 'CONTRA', 'NEUTRAL'];
+
+/** Stacked share of the sample, one segment per stance. */
+function StanceBar({ breakdown, delay }: { breakdown: AnalyzeResponse['breakdown']; delay: number }) {
+  const { t } = useI18n();
+  const share: Record<Stance, number> = { PRO: breakdown.pro, CONTRA: breakdown.contra, NEUTRAL: breakdown.neutral };
+  const total = ORDER.reduce((sum, s) => sum + share[s], 0);
+  if (total <= 0) return <p className="text-sm text-ink-muted">{t.caseFile.noComments}</p>;
+
+  return (
+    <div>
+      <div aria-hidden="true" className="flex h-3 w-full overflow-hidden rounded-[1px] bg-line">
+        {ORDER.map((s) => (
+          <motion.span
+            key={s}
+            style={{ backgroundColor: STANCE_COLOR[s] }}
+            initial={{ width: 0 }}
+            animate={{ width: `${(share[s] / total) * 100}%` }}
+            transition={{ delay, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          />
+        ))}
+      </div>
+      <ul className="mt-3 space-y-1">
+        {ORDER.map((s) => (
+          <li key={s} className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-ink-muted">
+            <span aria-hidden="true" className="size-2 shrink-0" style={{ backgroundColor: STANCE_COLOR[s] }} />
+            {t.stance[s]}
+            <span className="ml-auto tabular-nums text-ink">{percent(share[s])}%</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function Cell({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="bg-newsprint px-5 py-5 sm:px-6">
@@ -71,82 +106,123 @@ function Cell({ label, children }: { label: string; children: ReactNode }) {
 }
 
 interface CaseFileCardProps {
-  response: FactCheckResponse;
-  /** Seconds before the verdict stamp drops, so it lands after the lens settles. */
+  response: AnalyzeResponse;
+  /** Seconds before the stamp drops, so it lands after the lens settles. */
   stampDelay?: number;
 }
 
 export function CaseFileCard({ response, stampDelay = 0.6 }: CaseFileCardProps) {
-  const v = verdictMeta(response);
-  const unverifiable = isUnverifiable(response);
+  const { t, fmt } = useI18n();
+  const c = climateMeta(response, t);
+  const insufficient = isInsufficient(response);
+  const { post, lean } = response;
 
   return (
     <motion.article
-      aria-labelledby="case-claim-label"
-      style={tone(v.color)}
+      aria-labelledby="case-post-label"
+      style={tone(c.color)}
       // The folder jolts as the stamp hits it.
       animate={{ y: [0, 3, -1, 0] }}
       transition={{ delay: stampDelay + 0.1, duration: 0.28 }}
     >
       <div className="paper -mb-px inline-flex items-center gap-2.5 rounded-t-md border border-b-0 border-line px-4 py-2 font-mono text-xs uppercase tracking-[0.2em] text-ink-muted">
         <FolderClosed className="size-3.5" strokeWidth={1.75} />
-        Berkas kasus
+        {t.caseFile.folder}
         <span className="text-lens">{response.case_id}</span>
       </div>
 
       <div className="paper overflow-hidden rounded-md rounded-tl-none border border-line">
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-b border-dashed border-line px-5 py-2.5 font-mono text-[11px] uppercase tracking-[0.3em] text-ink-muted sm:px-8">
-          <span>Rahasia · untuk pemeriksaan</span>
+          <span>{t.caseFile.classified}</span>
           <span>{response.topic}</span>
         </div>
 
         <div className="grid gap-8 px-5 py-7 sm:px-8 md:grid-cols-[1fr_auto] md:items-center md:gap-12">
           <div className="min-w-0">
-            <p id="case-claim-label" className="font-mono text-xs uppercase tracking-[0.25em] text-ink-muted">
-              Klaim yang diperiksa
+            <p id="case-post-label" className="font-mono text-xs uppercase tracking-[0.25em] text-ink-muted">
+              {t.caseFile.postRead}
             </p>
             <blockquote className="mt-3 text-xl font-medium leading-snug text-pretty text-ink-bright sm:text-2xl">
-              “{response.claim_extracted}”
+              {post ? post.title : t.caseFile.postUnavailable}
             </blockquote>
             <p className="mt-4 font-mono text-xs text-ink-muted">
-              Diserahkan sebagai {response.input.kind === 'url' ? 'tautan artikel' : 'teks'} · diperiksa{' '}
-              {formatTime(response.checked_at)}
+              {post ? `${PLATFORM_LABEL[post.platform]} · ${post.author} · ` : ''}
+              {post ? `${t.caseFile.sampledOf(fmt.count(post.sampled), fmt.count(post.comment_count))} · ` : ''}
+              {t.caseFile.checkedAt(fmt.time(response.checked_at))}
             </p>
           </div>
 
           <RubberStamp
-            label={v.stamp}
+            label={c.stamp}
             caption={response.case_id}
-            color={v.color}
+            color={c.color}
             delay={stampDelay}
             className="justify-self-start md:mr-2 md:justify-self-end"
           />
         </div>
 
-        <dl className="grid gap-px border-t border-line bg-line sm:grid-cols-3">
-          <Cell label="Vonis">
-            <p className="text-lg font-semibold text-(--tone)">{v.label}</p>
-            <p className="mt-1 text-sm leading-relaxed text-ink-muted">{v.note}</p>
+        <dl className="grid gap-px border-t border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
+          <Cell label={t.caseFile.reading}>
+            <p className="text-lg font-semibold text-(--tone)">{c.label}</p>
+            <p className="mt-1 text-sm leading-relaxed text-ink-muted">{c.note}</p>
           </Cell>
 
-          <Cell label="Keyakinan model">
-            {unverifiable ? (
-              <p className="text-sm leading-relaxed text-ink-muted">Tidak ditampilkan. Tanpa bukti, skor keyakinan tidak bermakna.</p>
+          <Cell label={t.caseFile.leansToward}>
+            {lean ? (
+              <>
+                <p className="text-lg font-semibold" style={{ color: STANCE_COLOR[lean.direction] }}>
+                  {leanLabel(lean, t)}
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-ink-muted">{t.caseFile.leanShare(percent(lean.share))}</p>
+              </>
+            ) : (
+              <>
+                <p className="text-lg font-semibold text-ink">
+                  {insufficient ? t.caseFile.leanUnknown : t.caseFile.leanNone}
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-ink-muted">
+                  {insufficient ? t.caseFile.leanUnknownNote : t.caseFile.leanNoneNote}
+                </p>
+              </>
+            )}
+          </Cell>
+
+          <Cell label={t.caseFile.confidence}>
+            {insufficient ? (
+              <p className="text-sm leading-relaxed text-ink-muted">{t.caseFile.confidenceHidden}</p>
             ) : (
               <ConfidenceMeter value={percent(response.confidence)} delay={stampDelay + 0.25} />
             )}
           </Cell>
 
-          <Cell label="Pihak disebut">
+          <Cell label={t.caseFile.composition}>
+            <StanceBar breakdown={response.breakdown} delay={stampDelay + 0.35} />
+          </Cell>
+
+          <Cell label={t.caseFile.buzzerShare}>
+            {insufficient ? (
+              <p className="text-sm text-ink-muted">{t.caseFile.notCounted}</p>
+            ) : (
+              <>
+                <p className="text-3xl font-bold text-debunked tabular-nums">
+                  {percent(response.buzzer_share)}
+                  <span className="text-lg">%</span>
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-ink-muted">{t.caseFile.buzzerShareNote}</p>
+              </>
+            )}
+          </Cell>
+
+          <Cell label={t.caseFile.discussed}>
             {response.entities.length === 0 ? (
-              <p className="text-sm text-ink-muted">Tidak ada</p>
+              <p className="text-sm text-ink-muted">{t.caseFile.none}</p>
             ) : (
               <ul className="space-y-2">
                 {response.entities.map((e, i) => (
                   <li key={i} className="text-sm leading-snug">
                     <span className="text-ink">{e.name}</span>
                     <span className="block font-mono text-[11px] uppercase tracking-wider text-ink-muted">
-                      {ENTITY_TYPE[e.type]} · nada {SENTIMENT[e.stance]}
+                      {t.caseFile.entityLine(t.entityType[e.type], t.stance[e.stance].toLowerCase(), fmt.count(e.mentions))}
                     </span>
                   </li>
                 ))}

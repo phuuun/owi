@@ -1,6 +1,6 @@
 {
   "name": "owi",
-  "description": "Alat pemeriksa klaim politik Indonesia berbasis bukti dan analisis kredibel.",
+  "description": "Alat buat baca kolom komentar media sosial: condong ke mana, dan ramainya alami atau digerakkan buzzer.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

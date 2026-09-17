@@ -1,11 +1,8 @@
 import { useId, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { Link2, ScanSearch, Type } from 'lucide-react';
-import { toRequest } from '../lib/api';
-
-// Mirrors the server's validation (server/factCheck.ts).
-const TEXT_MIN = 10;
-const TEXT_MAX = 1000;
+import { Link2, ScanSearch, TriangleAlert } from 'lucide-react';
+import { useI18n } from '../lib/i18n';
+import { detectPlatform, PLATFORM_LABEL } from '../lib/platform';
 
 const MUTED = '#888888';
 const LENS = '#f5c518';
@@ -22,27 +19,33 @@ const CORNERS = [
 interface SearchInterrogationProps {
   value: string;
   onChange: (value: string) => void;
-  onSubmit: (raw: string) => void;
+  onSubmit: (url: string) => void;
   isLoading: boolean;
 }
 
 export function SearchInterrogation({ value, onChange, onSubmit, isLoading }: SearchInterrogationProps) {
+  const { t } = useI18n();
   const id = useId();
   const reduceMotion = useReducedMotion();
   const [focused, setFocused] = useState(false);
   const [focusCount, setFocusCount] = useState(0);
-  const [problem, setProblem] = useState<string | null>(null);
+  // Held as a key, not a sentence, so a language switch retranslates it.
+  const [problem, setProblem] = useState<'needFullUrl' | 'unsupported' | null>(null);
 
   const trimmed = value.trim();
-  const isUrl = 'url' in toRequest(value);
-  const overLimit = !isUrl && trimmed.length > TEXT_MAX;
+  const platform = detectPlatform(trimmed);
   const armed = focused || isLoading || trimmed.length > 0;
 
+  // Mirrors server/analyze.ts, so the obvious mistakes never reach the network.
   const submit = (e?: FormEvent) => {
     e?.preventDefault();
-    if (isLoading || overLimit) return;
-    if (!isUrl && trimmed.length < TEXT_MIN) {
-      setProblem(`Klaim terlalu pendek, minimal ${TEXT_MIN} karakter.`);
+    if (isLoading || !trimmed) return;
+    if (!/^https?:\/\/\S+$/i.test(trimmed)) {
+      setProblem('needFullUrl');
+      return;
+    }
+    if (!platform) {
+      setProblem('unsupported');
       return;
     }
     onSubmit(trimmed);
@@ -105,26 +108,26 @@ export function SearchInterrogation({ value, onChange, onSubmit, isLoading }: Se
         <div className="flex items-center justify-between gap-4 font-mono text-[11px] uppercase tracking-[0.25em] text-ink-muted">
           <span aria-hidden="true" className="flex items-center gap-2">
             <span className={`size-2 rounded-full ${armed ? 'bg-lens motion-safe:animate-blink' : 'bg-line-strong'}`} />
-            {isLoading ? 'Merekam' : armed ? 'Fokus' : 'Siaga'}
+            {isLoading ? t.search.stateRecording : armed ? t.search.stateFocus : t.search.stateStandby}
           </span>
           <span aria-live="polite" className="relative overflow-hidden">
             <AnimatePresence mode="popLayout" initial={false}>
               <motion.span
-                key={isUrl ? 'url' : 'text'}
+                key={platform ?? (trimmed ? 'unknown' : 'idle')}
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 8 }}
-                className={`flex items-center gap-1.5 ${isUrl ? 'text-verified' : ''}`}
+                className={`flex items-center gap-1.5 ${platform ? 'text-verified' : ''}`}
               >
-                {isUrl ? <Link2 className="size-3.5" /> : <Type className="size-3.5" />}
-                {isUrl ? 'Tautan artikel' : 'Teks klaim'}
+                {platform ? <Link2 className="size-3.5" /> : <TriangleAlert className="size-3.5" />}
+                {platform ? PLATFORM_LABEL[platform] : trimmed ? t.search.unknownPlatform : t.search.waitingForLink}
               </motion.span>
             </AnimatePresence>
           </span>
         </div>
 
         <label htmlFor={id} className="sr-only">
-          Klaim atau tautan artikel
+          {t.search.inputLabel}
         </label>
         <textarea
           id={id}
@@ -141,37 +144,31 @@ export function SearchInterrogation({ value, onChange, onSubmit, isLoading }: Se
           }}
           onBlur={() => setFocused(false)}
           onKeyDown={handleKeyDown}
-          aria-invalid={Boolean(problem) || overLimit}
+          aria-invalid={Boolean(problem)}
           aria-describedby={`${id}-hint`}
-          placeholder="Tempel klaim politik atau tautan artikel berita…"
+          placeholder={t.search.placeholder}
           className="mt-4 block min-h-20 w-full resize-none bg-transparent text-lg leading-relaxed text-ink-bright field-sizing-content placeholder:text-ink-muted focus:outline-none disabled:opacity-60 sm:text-xl"
         />
 
         <div className="mt-3 flex items-center justify-between gap-4 border-t border-dashed border-line pt-3">
           <p id={`${id}-hint`} className="min-w-0 font-mono text-[11px] uppercase tracking-[0.2em] text-ink-muted">
-            {isUrl ? (
-              'Artikel diurai jadi klaim'
-            ) : (
-              <span className={`tabular-nums ${overLimit ? 'text-debunked' : ''}`}>
-                {String(trimmed.length).padStart(3, '0')}/{TEXT_MAX}
-              </span>
-            )}
-            <span className="hidden sm:inline"> · Enter untuk memeriksa</span>
+            {t.search.hint}
+            <span className="hidden sm:inline">{t.search.hintEnter}</span>
           </p>
           <button
             type="submit"
-            disabled={isLoading || !trimmed || overLimit}
+            disabled={isLoading || !trimmed}
             className="inline-flex shrink-0 items-center gap-2 rounded-sm bg-lens px-4 py-2.5 font-mono text-sm font-bold uppercase tracking-[0.15em] text-charcoal transition-colors hover:bg-ink-bright disabled:cursor-not-allowed disabled:bg-line-strong disabled:text-ink-muted"
           >
             <ScanSearch className="size-4" strokeWidth={2.25} />
-            {isLoading ? 'Memindai' : 'Interogasi'}
+            {isLoading ? t.search.submitLoading : t.search.submit}
           </button>
         </div>
       </motion.div>
 
       {problem && (
         <p role="alert" className="mt-3 font-mono text-sm text-debunked">
-          {problem}
+          {t.search[problem]}
         </p>
       )}
     </form>
