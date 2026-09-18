@@ -41,12 +41,5 @@ export const signalKindLabel = (kind: string, t: Strings) =>
 /** "Pro-Pemerintah", "Against-Kenaikan PPN 12%". */
 export const leanLabel = (lean: Lean, t: Strings) => `${t.stance[lean.direction]}-${lean.target}`;
 
-/** A weight is a strength, not a probability: say so in words next to the number. */
-export function signalStrength(weight: number, t: Strings) {
-  if (weight >= 0.7) return t.strength.STRONG;
-  if (weight >= 0.4) return t.strength.MEDIUM;
-  return t.strength.WEAK;
-}
-
 /** Exposes a color as `--tone`, so Tailwind classes like `text-(--tone)` can use it. */
 export const tone = (color: string) => ({ '--tone': color }) as CSSProperties;

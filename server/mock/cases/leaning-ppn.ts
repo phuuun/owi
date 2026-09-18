@@ -13,8 +13,8 @@ export const leaningPpn: MockCase = {
   sample: {
     label: { id: 'Condong tapi alami', en: 'Leaning but organic' },
     note: {
-      id: '83% nolak kebijakannya, tapi kalimatnya beda-beda dan komentarnya nyebar lima hari. Condong belum tentu digerakkan.',
-      en: '83% reject the policy, but every comment is worded differently and they are spread over five days. Leaning is not the same as driven.',
+      id: '83% nolak, tapi kalimatnya beda-beda dan nyebar lima hari. Condong belum tentu digerakkan.',
+      en: '83% against, but the wording all differs and it is spread over five days. Leaning is not the same as driven.',
     },
     url: URL,
   },
@@ -145,8 +145,8 @@ export const leaningPpn: MockCase = {
         id: 'ppn-sg1',
         kind: 'FRESH_ACCOUNT',
         detail: {
-          id: '31 akun umurnya di bawah enam bulan, cuma 1,3 persen dari sampel. Masih di bawah rata-rata platform, nggak mencurigakan.',
-          en: '31 accounts are under six months old, just 1.3 percent of the sample. Still below the platform average, so nothing suspicious.',
+          id: '31 akun baru, cuma 1,3% dari sampel. Masih wajar.',
+          en: '31 fresh accounts, just 1.3% of the sample. Still normal.',
         },
         weight: 0.18,
         comment_ids: ['ppn-c08'],
@@ -155,8 +155,8 @@ export const leaningPpn: MockCase = {
         id: 'ppn-sg2',
         kind: 'GENERIC_PRAISE',
         detail: {
-          id: 'Delapan komentar pro cuma dukungan umum tanpa nyebut isi video. Kesedikitan buat dibilang pola.',
-          en: 'Eight supportive comments are generic, with nothing about the video itself. Too few to call a pattern.',
+          id: 'Delapan komentar pro isinya dukungan umum. Kesedikitan buat disebut pola.',
+          en: 'Eight supportive comments are generic. Too few to be a pattern.',
         },
         weight: 0.21,
         comment_ids: ['ppn-c08'],

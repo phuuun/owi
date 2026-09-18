@@ -53,11 +53,7 @@ export function Layout({ children, archiveCount, onHome, onOpenArchive }: Layout
           <div className="flex items-center gap-4">
             <LanguageToggle />
 
-            <button
-              type="button"
-              onClick={onOpenArchive}
-              className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-ink-muted transition-colors hover:text-ink-bright"
-            >
+            <button type="button" onClick={onOpenArchive} className="btn">
               <Archive className="size-4" strokeWidth={1.75} />
               {t.layout.archive}
               {archiveCount > 0 && <span className="text-lens tabular-nums">{archiveCount}</span>}

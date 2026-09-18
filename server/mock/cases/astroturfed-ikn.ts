@@ -7,8 +7,8 @@ export const astroturfedIkn: MockCase = {
   sample: {
     label: { id: 'Kemungkinan buzzer', en: 'Likely buzzer' },
     note: {
-      id: 'Satu sisi menang telak, dan belasan akun baru nulis kalimat yang sama persis dalam hitungan menit. Itu koordinasi, bukan cuma sepakat.',
-      en: 'One side wins by a mile, and a dozen fresh accounts wrote the exact same sentence within minutes. That is coordination, not agreement.',
+      id: 'Belasan akun baru nulis kalimat yang sama persis dalam hitungan menit.',
+      en: 'A dozen fresh accounts wrote the same sentence within minutes.',
     },
     url: URL,
   },
@@ -169,8 +169,8 @@ export const astroturfedIkn: MockCase = {
         id: 'ikn-sg1',
         kind: 'TEMPLATE',
         detail: {
-          id: '14 akun nulis kalimat yang sama persis, cuma beda satu kata, semuanya dalam 14 menit.',
-          en: '14 accounts wrote the exact same sentence, one word apart, all within 14 minutes.',
+          id: '14 akun nulis kalimat yang sama, cuma beda satu kata, dalam 14 menit.',
+          en: '14 accounts wrote the same sentence, one word apart, within 14 minutes.',
         },
         weight: 0.92,
         comment_ids: ['ikn-c01', 'ikn-c02', 'ikn-c03', 'ikn-c06'],
@@ -179,8 +179,8 @@ export const astroturfedIkn: MockCase = {
         id: 'ikn-sg2',
         kind: 'BURST',
         detail: {
-          id: '418 komentar masuk antara jam 09.00 sampai 09.30, sekitar 12 kali lipat dari rata-rata kanal ini di jam yang sama.',
-          en: '418 comments landed between 09:00 and 09:30, about 12 times what this channel usually gets at that hour.',
+          id: '418 komentar masuk dalam 30 menit, 12 kali lipat dari biasanya.',
+          en: '418 comments in 30 minutes, 12 times the usual.',
         },
         weight: 0.84,
         comment_ids: ['ikn-c01', 'ikn-c02', 'ikn-c03', 'ikn-c04', 'ikn-c05', 'ikn-c06'],
@@ -189,8 +189,8 @@ export const astroturfedIkn: MockCase = {
         id: 'ikn-sg3',
         kind: 'FRESH_ACCOUNT',
         detail: {
-          id: 'Delapan dari sepuluh akun paling aktif umurnya di bawah 60 hari dan masih pakai foto profil bawaan.',
-          en: 'Eight of the ten busiest accounts are under 60 days old and still on the default profile picture.',
+          id: '8 dari 10 akun paling aktif umurnya di bawah 60 hari.',
+          en: '8 of the 10 busiest accounts are under 60 days old.',
         },
         weight: 0.77,
         comment_ids: ['ikn-c01', 'ikn-c02', 'ikn-c03', 'ikn-c04', 'ikn-c05', 'ikn-c06'],
@@ -199,8 +199,8 @@ export const astroturfedIkn: MockCase = {
         id: 'ikn-sg4',
         kind: 'GENERIC_PRAISE',
         detail: {
-          id: 'Kebanyakan komentar pro nggak nyebut isi videonya sama sekali: nggak ada angka, lokasi, atau kebijakan yang disinggung.',
-          en: 'Most supportive comments never touch the video itself: no figures, no locations, no policy mentioned.',
+          id: 'Komentar pro nggak nyebut isi videonya sama sekali.',
+          en: 'The supportive comments never mention the video itself.',
         },
         weight: 0.63,
         comment_ids: ['ikn-c01', 'ikn-c02', 'ikn-c03', 'ikn-c06', 'ikn-c09'],
@@ -209,8 +209,8 @@ export const astroturfedIkn: MockCase = {
         id: 'ikn-sg5',
         kind: 'NO_ARGUMENT',
         detail: {
-          id: 'Komentar pendukung rata-rata cuma sembilan kata, nggak ada alasan, data, atau link.',
-          en: 'Supportive comments run nine words on average, with no reasoning, figures or links.',
+          id: 'Rata-rata cuma sembilan kata, tanpa alasan atau data.',
+          en: 'Nine words on average, with no reasoning or figures.',
         },
         weight: 0.58,
         comment_ids: ['ikn-c04', 'ikn-c05'],

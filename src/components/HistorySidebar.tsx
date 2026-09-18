@@ -38,19 +38,14 @@ export function HistorySidebar({ history, activeId, onSelect, onClear, isOpen, o
           <h2 id="archive-title" className="font-mono text-sm uppercase tracking-[0.25em] text-ink-bright">
             {t.archive.title}
           </h2>
-          <div className="flex items-center gap-4 font-mono text-xs uppercase tracking-[0.2em] text-ink-muted">
+          <div className="flex items-center gap-2">
             {history.length > 0 && (
-              <button type="button" onClick={onClear} className="transition-colors hover:text-ink-bright">
+              <button type="button" onClick={onClear} className="btn">
                 {t.archive.clear}
               </button>
             )}
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label={t.archive.close}
-              className="transition-colors hover:text-ink-bright"
-            >
-              <X className="size-5" strokeWidth={1.5} />
+            <button type="button" onClick={onClose} aria-label={t.archive.close} className="btn px-2">
+              <X className="size-4" strokeWidth={1.75} />
             </button>
           </div>
         </div>

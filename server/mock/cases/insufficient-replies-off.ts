@@ -12,8 +12,8 @@ export const insufficientRepliesOff: MockCase = {
   sample: {
     label: { id: 'Kurang data', en: 'Not enough data' },
     note: {
-      id: 'Balasan dibatasi, cuma segelintir komentar yang kebaca. OWI milih bilang nggak tahu daripada nebak.',
-      en: 'Replies are restricted, so only a handful of comments could be read. OWI would rather say it does not know than guess.',
+      id: 'Balasannya dibatasi, cuma segelintir komentar yang kebaca. OWI milih bilang nggak tahu.',
+      en: 'Replies are restricted, so only a handful of comments could be read. OWI would rather say it does not know.',
     },
     url: URL,
   },

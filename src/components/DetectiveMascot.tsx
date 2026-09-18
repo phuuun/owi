@@ -1,12 +1,15 @@
 import { useEffect, useId } from 'react';
 import { AnimatePresence, motion, useMotionValue, useReducedMotion, useSpring } from 'framer-motion';
+import { useI18n } from '../lib/i18n';
 
 const INK = '#e6dfcf';
 const LINE = { stroke: INK, strokeWidth: 3, strokeLinejoin: 'round', strokeLinecap: 'round' } as const;
 
+/** `searching` leans him in over a magnifier; `resting` is the reading finished, mug out. */
+export type MascotMode = 'idle' | 'searching' | 'resting';
+
 interface DetectiveMascotProps {
-  /** True while a claim is being checked: he leans in and pulls out the magnifier. */
-  searching: boolean;
+  mode: MascotMode;
   className?: string;
 }
 
@@ -14,7 +17,8 @@ interface DetectiveMascotProps {
  * The OWI detective: fedora, round shades, windblown scarf. Bobs while idle,
  * glances toward the pointer, tips his hat on hover. Decorative only.
  */
-export function DetectiveMascot({ searching, className = '' }: DetectiveMascotProps) {
+export function DetectiveMascot({ mode, className = '' }: DetectiveMascotProps) {
+  const { t } = useI18n();
   const uid = useId().replace(/[^a-zA-Z0-9-]/g, '');
   const reduceMotion = useReducedMotion();
   const rawX = useMotionValue(0);
@@ -37,11 +41,11 @@ export function DetectiveMascot({ searching, className = '' }: DetectiveMascotPr
       aria-hidden="true"
       className={`group select-none ${className}`}
       initial={false}
-      animate={searching ? 'searching' : 'idle'}
+      animate={mode}
       whileHover="tip"
     >
       <span className="pointer-events-none absolute -top-2 right-[70%] rounded-sm border border-line-strong bg-charcoal px-3 py-1.5 font-mono text-xs whitespace-nowrap text-ink opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-        {searching ? 'On it…' : "Got a claim? Let's check it."}
+        {t.mascot[mode]}
       </span>
 
       <motion.svg
@@ -50,6 +54,8 @@ export function DetectiveMascot({ searching, className = '' }: DetectiveMascotPr
         variants={{
           idle: { rotate: 0, y: reduceMotion ? 0 : [0, -6, 0], transition: { y: { duration: 3.2, repeat: Infinity, ease: 'easeInOut' } } },
           searching: { rotate: -6, y: 4, transition: { type: 'spring', stiffness: 200, damping: 14 } },
+          // Leaned back, breathing slower: the reading is done.
+          resting: { rotate: 5, y: reduceMotion ? 0 : [0, -3, 0], transition: { y: { duration: 4.6, repeat: Infinity, ease: 'easeInOut' } } },
         }}
       >
         <defs>
@@ -86,14 +92,19 @@ export function DetectiveMascot({ searching, className = '' }: DetectiveMascotPr
               opacity="0.85"
               initial={{ x: 60 }}
               animate={reduceMotion ? undefined : { x: [60, 180] }}
-              transition={{ duration: searching ? 0.5 : 0.9, repeat: Infinity, repeatDelay: searching ? 0.5 : 3.4, ease: 'easeInOut' }}
+              transition={{
+                duration: mode === 'searching' ? 0.5 : 0.9,
+                repeat: Infinity,
+                repeatDelay: mode === 'searching' ? 0.5 : 3.4,
+                ease: 'easeInOut',
+              }}
             />
           </g>
         </motion.g>
 
         <motion.g
           style={{ originX: 0.3, originY: 1 }}
-          variants={{ idle: { y: 0, rotate: 0 }, searching: { y: 0, rotate: 0 }, tip: { y: -14, rotate: -12 } }}
+          variants={{ idle: { y: 0, rotate: 0 }, searching: { y: 0, rotate: 0 }, resting: { y: 0, rotate: 0 }, tip: { y: -14, rotate: -12 } }}
           transition={{ type: 'spring', stiffness: 300, damping: 15 }}
         >
           <path d="M74 90 C 70 60, 84 40, 118 40 C 152 40, 166 60, 162 88 C 138 96, 98 96, 74 90 Z" fill="#5d5850" {...LINE} />
@@ -103,7 +114,29 @@ export function DetectiveMascot({ searching, className = '' }: DetectiveMascotPr
         </motion.g>
 
         <AnimatePresence>
-          {searching && (
+          {mode === 'resting' && (
+            <motion.g key="mug" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
+              {[
+                { x: 190, delay: 0 },
+                { x: 206, delay: 0.9 },
+              ].map(({ x, delay }) => (
+                <motion.path
+                  key={x}
+                  d={`M${x} 152 Q${x - 6} 142 ${x} 132`}
+                  fill="none"
+                  stroke={INK}
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  animate={reduceMotion ? { opacity: 0.5 } : { y: [0, -12], opacity: [0, 0.5, 0] }}
+                  transition={{ duration: 2.6, repeat: Infinity, delay, ease: 'easeOut' }}
+                />
+              ))}
+              <path d="M214 174 C 230 174, 230 194, 214 194" fill="none" {...LINE} />
+              <path d="M176 166 H216 V190 C216 202, 207 210, 196 210 C185 210, 176 202, 176 190 Z" fill="#3a3733" {...LINE} />
+            </motion.g>
+          )}
+
+          {mode === 'searching' && (
             <motion.g
               key="magnifier"
               style={{ originX: 0.2, originY: 0.2 }}

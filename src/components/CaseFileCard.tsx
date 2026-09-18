@@ -4,8 +4,8 @@ import { FolderClosed } from 'lucide-react';
 import type { AnalyzeResponse, Stance } from '../types';
 import { percent } from '../lib/format';
 import { useI18n } from '../lib/i18n';
-import { PLATFORM_LABEL } from '../lib/platform';
 import { climateMeta, isInsufficient, leanLabel, STANCE_COLOR, tone } from '../lib/climate';
+import { DetectiveMascot } from './DetectiveMascot';
 import { FilmStripIcon } from './FilmStripIcon';
 import { RubberStamp } from './RubberStamp';
 
@@ -112,7 +112,7 @@ interface CaseFileCardProps {
 }
 
 export function CaseFileCard({ response, stampDelay = 0.6 }: CaseFileCardProps) {
-  const { t, fmt } = useI18n();
+  const { t } = useI18n();
   const c = climateMeta(response, t);
   const insufficient = isInsufficient(response);
   const { post, lean } = response;
@@ -132,11 +132,6 @@ export function CaseFileCard({ response, stampDelay = 0.6 }: CaseFileCardProps) 
       </div>
 
       <div className="paper overflow-hidden rounded-md rounded-tl-none border border-line">
-        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-b border-dashed border-line px-5 py-2.5 font-mono text-[11px] uppercase tracking-[0.3em] text-ink-muted sm:px-8">
-          <span>{t.caseFile.classified}</span>
-          <span>{response.topic}</span>
-        </div>
-
         <div className="grid gap-8 px-5 py-7 sm:px-8 md:grid-cols-[1fr_auto] md:items-center md:gap-12">
           <div className="min-w-0">
             <p id="case-post-label" className="font-mono text-xs uppercase tracking-[0.25em] text-ink-muted">
@@ -145,11 +140,6 @@ export function CaseFileCard({ response, stampDelay = 0.6 }: CaseFileCardProps) 
             <blockquote className="mt-3 text-xl font-medium leading-snug text-pretty text-ink-bright sm:text-2xl">
               {post ? post.title : t.caseFile.postUnavailable}
             </blockquote>
-            <p className="mt-4 font-mono text-xs text-ink-muted">
-              {post ? `${PLATFORM_LABEL[post.platform]} · ${post.author} · ` : ''}
-              {post ? `${t.caseFile.sampledOf(fmt.count(post.sampled), fmt.count(post.comment_count))} · ` : ''}
-              {t.caseFile.checkedAt(fmt.time(response.checked_at))}
-            </p>
           </div>
 
           <RubberStamp
@@ -213,21 +203,11 @@ export function CaseFileCard({ response, stampDelay = 0.6 }: CaseFileCardProps) 
             )}
           </Cell>
 
-          <Cell label={t.caseFile.discussed}>
-            {response.entities.length === 0 ? (
-              <p className="text-sm text-ink-muted">{t.caseFile.none}</p>
-            ) : (
-              <ul className="space-y-2">
-                {response.entities.map((e, i) => (
-                  <li key={i} className="text-sm leading-snug">
-                    <span className="text-ink">{e.name}</span>
-                    <span className="block font-mono text-[11px] uppercase tracking-wider text-ink-muted">
-                      {t.caseFile.entityLine(t.entityType[e.type], t.stance[e.stance].toLowerCase(), fmt.count(e.mentions))}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
+          <Cell label={t.caseFile.onBreak}>
+            {/* Fills the sixth slot of the grid: the reading is done, so he is off duty. */}
+            <div className="relative h-24">
+              <DetectiveMascot mode="resting" className="absolute right-0 -bottom-5 w-32 sm:w-36" />
+            </div>
           </Cell>
         </dl>
       </div>

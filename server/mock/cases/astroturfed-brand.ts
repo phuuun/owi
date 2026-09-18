@@ -8,8 +8,8 @@ export const astroturfedBrand: MockCase = {
   sample: {
     label: { id: 'Kemungkinan buzzer produk', en: 'Likely brand buzzer' },
     note: {
-      id: 'Buzzer nggak cuma soal politik. Mesin yang sama dipakai buat ngangkat produk: pujian seragam dari akun seumur jagung, plus tagar yang didorong bareng.',
-      en: 'Buzzers are not only political. The same machinery gets sold to a brand: uniform praise from brand-new accounts, plus a hashtag pushed in step.',
+      id: 'Buzzer nggak cuma soal politik. Pujian seragam dari akun baru, plus tagar yang didorong bareng.',
+      en: 'Buzzers are not only political. Uniform praise from new accounts, plus a hashtag pushed in step.',
     },
     url: URL,
   },
@@ -142,8 +142,8 @@ export const astroturfedBrand: MockCase = {
         id: 'kpi-sg1',
         kind: 'TEMPLATE',
         detail: {
-          id: '22 akun pakai kerangka kalimat yang sama, cuma ganti keterangan waktu sama satu kata sifat.',
-          en: '22 accounts used the same sentence skeleton, swapping only the time reference and one adjective.',
+          id: '22 akun pakai kalimat yang sama, cuma ganti satu dua kata.',
+          en: '22 accounts used the same sentence, swapping a word or two.',
         },
         weight: 0.9,
         comment_ids: ['kpi-c01', 'kpi-c02', 'kpi-c03'],
@@ -152,8 +152,8 @@ export const astroturfedBrand: MockCase = {
         id: 'kpi-sg2',
         kind: 'HASHTAG_PUSH',
         detail: {
-          id: 'Tagar #KopiNusantaraBaru nongol di 341 komentar dalam dua jam pertama, hampir selalu di ujung kalimat.',
-          en: 'The #KopiNusantaraBaru tag shows up in 341 comments in the first two hours, almost always at the end of the sentence.',
+          id: 'Tagar #KopiNusantaraBaru nongol di 341 komentar dalam dua jam.',
+          en: 'The #KopiNusantaraBaru tag shows up in 341 comments within two hours.',
         },
         weight: 0.81,
         comment_ids: ['kpi-c01', 'kpi-c02', 'kpi-c03', 'kpi-c04', 'kpi-c05'],
@@ -162,8 +162,8 @@ export const astroturfedBrand: MockCase = {
         id: 'kpi-sg3',
         kind: 'REPLY_RING',
         detail: {
-          id: 'Akun yang itu-itu aja saling balas dan saling like, bikin lingkaran tertutup isi 11 akun.',
-          en: 'The same handful of accounts reply to and like each other, forming a closed ring of 11.',
+          id: '11 akun yang itu-itu aja saling balas dan saling like.',
+          en: 'The same 11 accounts reply to and like each other.',
         },
         weight: 0.74,
         comment_ids: ['kpi-c04', 'kpi-c05'],
@@ -172,8 +172,8 @@ export const astroturfedBrand: MockCase = {
         id: 'kpi-sg4',
         kind: 'FRESH_ACCOUNT',
         detail: {
-          id: 'Rata-rata umur akun pemuji 64 hari, dan udah posting 9 sampai 11 kali sehari sejak dibuat.',
-          en: 'The praising accounts average 64 days old and have posted 9 to 11 times a day since they were created.',
+          id: 'Akun pemujinya rata-rata umur 64 hari dan posting 10 kali sehari.',
+          en: 'The praising accounts average 64 days old and post 10 times a day.',
         },
         weight: 0.69,
         comment_ids: ['kpi-c01', 'kpi-c02', 'kpi-c03'],

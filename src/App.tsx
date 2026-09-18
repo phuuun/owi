@@ -14,7 +14,6 @@ import { NoirSkyline } from './components/NoirSkyline';
 import { PostingTimeline } from './components/PostingTimeline';
 import { SearchInterrogation } from './components/SearchInterrogation';
 import { SectionHeading } from './components/SectionHeading';
-import { TokenExplanation } from './components/TokenExplanation';
 import { analyze, fetchSamples } from './lib/api';
 import { CLIMATE_COLOR, tone } from './lib/climate';
 import { hostname } from './lib/format';
@@ -162,11 +161,7 @@ export default function App() {
               className="pt-8 sm:pt-10"
             >
               <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={goHome}
-                  className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.2em] text-ink-muted transition-colors hover:text-ink-bright"
-                >
+                <button type="button" onClick={goHome} className="btn">
                   <ArrowLeft className="size-4" />
                   {t.home.newCase}
                 </button>
@@ -185,7 +180,6 @@ export default function App() {
                 <ClusterBoard response={current.response} activeId={focus?.id ?? null} onSelect={selectFocus} />
                 <CommentDossier response={current.response} focus={focus} onSelectSignal={selectFocus} />
                 <PostingTimeline timeline={current.response.timeline} />
-                <TokenExplanation tokens={current.response.explanation_tokens} />
               </FocusShift>
             </motion.div>
           ) : (
@@ -199,7 +193,7 @@ export default function App() {
               className="relative isolate pt-14 sm:pt-24"
             >
               <NoirSkyline />
-              <DetectiveMascot searching={pending} className="absolute top-8 right-0 hidden w-52 lg:block xl:w-60" />
+              <DetectiveMascot mode={pending ? 'searching' : 'idle'} className="absolute top-8 right-0 hidden w-52 lg:block xl:w-60" />
 
               <h1 className="text-5xl leading-[1.02] font-bold tracking-tight text-balance text-ink-bright sm:text-7xl lg:max-w-2xl">
                 {t.home.tagline}

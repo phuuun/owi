@@ -145,6 +145,37 @@
     opacity: 0.035;
   }
 
+  /* Secondary control: a pressable key on slate, so it never reads as body text. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid var(--color-line-strong);
+    border-radius: 2px;
+    background-color: var(--color-slate);
+    padding: 0.5rem 0.875rem;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--color-ink);
+    transition:
+      color 150ms,
+      border-color 150ms,
+      background-color 150ms;
+  }
+
+  .btn:hover {
+    border-color: var(--color-lens);
+    background-color: var(--color-newsprint);
+    color: var(--color-ink-bright);
+  }
+
+  .btn:active {
+    translate: 0 1px;
+  }
+
   .ink-worn {
     -webkit-mask-image: var(--ink-mask);
     mask-image: var(--ink-mask);

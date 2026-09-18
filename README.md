@@ -67,9 +67,9 @@ The five cases are chosen to span the model, not just to fill a list:
 | `astroturfed-brand` | Kemungkinan buzzer produk | Buzzers are not only political — same machinery sold to a brand |
 | `insufficient-replies-off` | Kurang data | The post resolved, the comment section did not |
 
-A link to a supported platform that matches no case comes back `INSUFFICIENT` with `sample_empty: true`, an empty sample and no token weights. A link to any other host is rejected with `UNSUPPORTED_PLATFORM` rather than pretended over. The home page lists the cases under **Contoh output**, each with its climate and a sentence on why it reads that way; the list is fetched from `/api/samples` and simply disappears when a real backend doesn't serve it.
+A link to a supported platform that matches no case comes back `INSUFFICIENT` with `sample_empty: true`, an empty sample and no token weights. A link to any other host is rejected with `UNSUPPORTED_PLATFORM` rather than pretended over. The home page lists the cases under **Contoh**, each with its climate and a sentence on why it reads that way; the list is fetched from `/api/samples` and simply disappears when a real backend doesn't serve it.
 
-Each case's `timeline` is a real aggregate over its whole sample, while `comments` is only the excerpt shown in the report — the tests assert the two agree (`sum(timeline.total) === post.sampled`, and the timeline's buzzer share matches `buzzer_share`).
+Each case's `timeline` is a real aggregate over its whole sample, while `comments` is only the excerpt shown in the report — the tests assert the two agree (`sum(timeline.total) === post.sampled`, and the timeline's buzzer share matches `buzzer_share`). The report shows four of those comments by default, one of each label first so a shortened list never reads as if every comment were a buzzer; picking a finding or a cluster opens the rest, because its evidence has to be on the page.
 
 To use a real backend, have it implement the contract below and point the proxy at it (`OWI_API_PORT`, or edit `vite.config.ts`). The client validates every response in `parseAnalyzeResponse`, so a payload that breaks the contract shows an error instead of a blank page.
 
@@ -127,7 +127,7 @@ Types live in `src/types.ts` and are shared by client and server, as is platform
     comment_ids: string[],
   }[],
   signals: { id, kind: SignalKind, detail, weight, comment_ids: string[] }[],
-  explanation_tokens: { token: string, weight: number }[],   // LIME, -1..1
+  explanation_tokens: { token: string, weight: number }[],   // LIME, -1..1; part of the contract, not currently shown
   timeline: { start: string, total: number, buzzer: number }[],  // oldest first
   sample_empty: boolean,           // true → "Kurang data"
 }
@@ -151,6 +151,8 @@ Noir detective meets black-and-white broadcast. Tailwind v4 is configured in CSS
 | `lens`                                  | `#F5C518`                       | viewfinder, focus rings, case numbers      |
 
 Pro and contra are deliberately not good-and-bad colours: which side a comment section favours is not a verdict on that side.
+
+Secondary controls (New case, Archive, Clear) use the `.btn` class in `src/index.css`: a slate key with a line border that turns `lens` on hover, so a control never reads as a line of text. The one primary action is the filled `lens` button in the search field.
 
 Inter is the reading face; Courier Prime is for stamps, labels and numbers. The `.crt-*` classes (scanlines, vignette, grain, rolling refresh bar) sit above the page and ignore the pointer. Motion respects `prefers-reduced-motion`: CSS loops stop, and Framer Motion drops transforms and the lens blur.
 
@@ -178,15 +180,14 @@ src/
     ├── SearchInterrogation  viewfinder input, live platform detection
     ├── FilmCountdown      film-leader 3-2-1 loading state
     ├── NoirSkyline        night city backdrop behind the home hero
-    ├── DetectiveMascot    fedora-and-shades mascot, reacts while searching
-    ├── ModelInsights      model explanation, mock metrics and charts
+    ├── DetectiveMascot    fedora-and-shades mascot: idle, searching, or resting with a mug
+    ├── ModelInsights      home page only: the four steps, then mock evaluation charts
     ├── FocusShift         blur-to-sharp lens reveal for results
-    ├── CaseFileCard       climate, lean, composition, buzzer share, entities
+    ├── CaseFileCard       climate, lean, composition, buzzer share, off-duty mascot
     ├── RubberStamp        stamp-drop animation
     ├── ClusterBoard       post ↔ coordination cluster thread graph
-    ├── CommentDossier     findings list + comment excerpts, redacted accounts
+    ├── CommentDossier     findings list + a short comment excerpt
     ├── PostingTimeline    comment volume over time, buzzer portion shaded
-    ├── TokenExplanation   LIME word weights
     └── HistorySidebar     in-memory case archive
 ```
 

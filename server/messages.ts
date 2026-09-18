@@ -3,9 +3,9 @@ import { PLATFORM_LIST } from '../src/lib/platform.ts';
 
 /** Everything the API writes for the user. `message` is shown as-is, so it is translated. */
 const ID = {
-  invalidBody: 'Kirim satu isian: "url", link postingan yang mau dibaca kolom komentarnya.',
-  invalidUrl: 'Link-nya harus alamat http:// atau https:// yang bener.',
-  unsupportedPlatform: `OWI baru bisa baca kolom komentar dari ${PLATFORM_LIST.id}.`,
+  invalidBody: 'Kirim "url": link postingan yang mau dicek.',
+  invalidUrl: 'Link-nya harus mulai dari http:// atau https://.',
+  unsupportedPlatform: `OWI baru bisa baca ${PLATFORM_LIST.id}.`,
   invalidJson: 'Isi permintaannya harus JSON yang bener.',
   payloadTooLarge: 'Isi permintaannya kegedean.',
   internal: 'Lagi ada error di server.',
@@ -17,9 +17,9 @@ const ID = {
 export const MESSAGES: Record<Lang, typeof ID> = {
   id: ID,
   en: {
-    invalidBody: 'Send one field: "url", the link to the post whose comment section should be read.',
-    invalidUrl: 'The link has to be a valid http:// or https:// address.',
-    unsupportedPlatform: `OWI can only read comment sections on ${PLATFORM_LIST.en}.`,
+    invalidBody: 'Send "url": the link to the post to check.',
+    invalidUrl: 'The link has to start with http:// or https://.',
+    unsupportedPlatform: `OWI can only read ${PLATFORM_LIST.en}.`,
     invalidJson: 'The request body has to be valid JSON.',
     payloadTooLarge: 'The request body is too large.',
     internal: 'Something went wrong on the server.',

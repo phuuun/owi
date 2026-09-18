@@ -369,24 +369,20 @@ function F1Chart() {
   );
 }
 
-/** Home-page room for the model explanation, evaluation charts and scoring method. All mock for now. */
+/** Home page only: the four steps, then mock evaluation charts. Never shown on a report. */
 export function ModelInsights() {
   const { t, fmt } = useI18n();
 
   return (
     <section aria-labelledby="model-title" className="mt-20">
       <SectionHeading id="model-title" title={t.model.title} aside={<MockTag>{t.model.aside}</MockTag>} />
-      <p className="mt-5 max-w-2xl leading-relaxed text-ink">{t.model.intro}</p>
 
-      <ol className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <ol className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {t.model.pipeline.map((item, i) => (
           <li key={STEPS[i]} className="paper rounded-sm border border-line p-5">
             <p className="font-mono text-xs text-lens">{STEPS[i]}</p>
             <h3 className="mt-2 font-medium text-ink-bright">{item.title}</h3>
             <p className="mt-1.5 text-sm leading-relaxed text-ink-muted">{item.body}</p>
-            <p className="mt-4 border-t border-dashed border-line pt-3 font-mono text-[11px] uppercase tracking-[0.15em] text-ink-muted">
-              {t.model.pending}
-            </p>
           </li>
         ))}
       </ol>
@@ -402,7 +398,6 @@ export function ModelInsights() {
               {fmt.num(m.value, m.digits)}
               {m.suffix}
             </p>
-            <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.15em] text-ink-muted">{t.model.testSet}</p>
           </div>
         ))}
       </div>
@@ -413,31 +408,6 @@ export function ModelInsights() {
         </Panel>
         <Panel title={t.model.f1Title} subtitle={t.model.f1Subtitle}>
           <F1Chart />
-        </Panel>
-      </div>
-
-      <div className="mt-3">
-        <Panel title={t.model.scoreTitle} subtitle={t.model.scoreSubtitle}>
-          <div className="overflow-x-auto rounded-sm border border-line bg-charcoal px-4 py-4 font-mono text-xs whitespace-nowrap text-ink-bright sm:text-base">
-            {t.model.scoreFormula}
-          </div>
-          <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-3">
-            <div>
-              <dt className="font-mono text-ink-bright">wᵢ</dt>
-              <dd className="mt-1 leading-relaxed text-ink-muted">{t.model.scoreWeight}</dd>
-            </div>
-            <div>
-              <dt className="font-mono text-ink-bright">cᵢ</dt>
-              <dd className="mt-1 leading-relaxed text-ink-muted">{t.model.scoreStrength}</dd>
-            </div>
-            <div>
-              <dt className="font-mono text-ink-bright">{t.model.scoreThresholdTerm}</dt>
-              <dd className="mt-1 leading-relaxed text-ink-muted">{t.model.scoreThreshold}</dd>
-            </div>
-          </dl>
-          <p className="mt-5 border-t border-dashed border-line pt-4 text-sm leading-relaxed text-ink-muted">
-            {t.model.scoreNote}
-          </p>
         </Panel>
       </div>
     </section>

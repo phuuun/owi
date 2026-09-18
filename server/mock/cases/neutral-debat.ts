@@ -7,8 +7,8 @@ export const neutralDebat: MockCase = {
   sample: {
     label: { id: 'Netral', en: 'Neutral' },
     note: {
-      id: 'Dua sisi sama-sama ramai dan sama-sama bawa alasan. Nggak ada yang cukup menang buat disebut condong.',
-      en: 'Both sides are busy and both bring reasons. Neither wins by enough to call it a lean.',
+      id: 'Dua sisi sama-sama ramai dan sama-sama bawa alasan. Nggak ada yang menang.',
+      en: 'Both sides are busy and both bring reasons. Neither one wins.',
     },
     url: URL,
   },
@@ -139,8 +139,8 @@ export const neutralDebat: MockCase = {
         id: 'dbt-sg1',
         kind: 'GENERIC_PRAISE',
         detail: {
-          id: '104 komentar cuma dukungan satu baris tanpa nyebut isi debat, dan jumlahnya imbang di kedua kubu.',
-          en: '104 comments are one-line cheers that never mention the debate, and they are split evenly between both camps.',
+          id: '104 komentar cuma sorakan satu baris, dan jumlahnya imbang di kedua kubu.',
+          en: '104 comments are one-line cheers, split evenly between both camps.',
         },
         weight: 0.24,
         comment_ids: ['dbt-c06'],
