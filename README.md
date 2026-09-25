@@ -49,6 +49,30 @@ Two separate outputs, because they answer different questions.
 
 Coordination markers (`signals[].kind`) are `TEMPLATE`, `BURST`, `FRESH_ACCOUNT`, `GENERIC_PRAISE`, `NO_ARGUMENT`, `HASHTAG_PUSH` and `REPLY_RING`. Each carries a weight; `clusters[]` groups the accounts that posted the same thing at the same time.
 
+## Planned: comment categories
+
+> **Not implemented yet.** Nothing below is in `src/types.ts` or the mock server. It is the next step for the reading, and it goes into the [API](#api) section once the contract changes.
+
+Alongside `climate`, sort every comment into exactly one category and report the section as shares that sum to 100%. For example, "40% likely coordinated, 30% opinion, 20% joking, 10% filler":
+
+| Category | Means | Detected by |
+| --- | --- | --- |
+| `COORDINATED` | Template-like, repeated, arriving in bursts | Rules: the existing `TEMPLATE` / `BURST` clusters |
+| `SPAM` | Links, promotion, gambling (judol) | Rules: regex |
+| `OPINION` | A real stance or argument | Model |
+| `JOKE` | Banter, sarcasm, reactions, memes | Model |
+| `FILLER` | "first", emoji only, "up" | Rules, then model |
+
+Rules run first (`COORDINATED`, `SPAM`); the model decides the rest.
+
+Ground rules, consistent with the rest of OWI:
+
+- **Categories describe comments, never accounts.** No per-account category, no per-account profile.
+- **`COORDINATED` comes from patterns across many comments** (duplicates, timing), never from one comment's text. A single angry comment is not a buzzer.
+- **Show the template, not the people.** Coordinated evidence is shown as the shared skeleton ("12 comments shared this text"), since a verbatim comment can be searched back to its author.
+- **Always show the sample size** ("based on 300 of 12,000 comments").
+- **Known limit:** buzzers who write original text every time look like `OPINION` from text alone.
+
 ## Mock server
 
 `server/` runs on Node's built-in TypeScript support: no build step.
